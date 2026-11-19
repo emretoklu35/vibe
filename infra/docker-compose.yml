@@ -1,0 +1,37 @@
+# Yalnızca yerel geliştirme içindir. Parolalar burada sabit ve yalnızca localhost'a açık.
+name: vibe
+
+services:
+  postgres:
+    build: ./postgres
+    image: vibe-postgres:18-postgis
+    environment:
+      POSTGRES_USER: vibe
+      POSTGRES_PASSWORD: vibe_local_dev
+      POSTGRES_DB: vibe
+    ports:
+      - '127.0.0.1:55432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U vibe -d vibe']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:8-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '127.0.0.1:56379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  postgres-data:
+  redis-data:

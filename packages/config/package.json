@@ -1,0 +1,10 @@
+{
+  "name": "@vibe/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Paylaşılan TypeScript ve Prettier ayarları",
+  "exports": {
+    "./prettier": "./prettier.json",
+    "./tsconfig.strict.json": "./tsconfig.strict.json"
+  }
+}

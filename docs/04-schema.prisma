@@ -1,0 +1,761 @@
+// VIBE — Prisma şeması v1 (TASLAK, onay bekliyor)
+//
+// Bu dosya Faz 0 tasarım belgesidir. Faz 1'de apps/api/prisma/schema.prisma'ya taşınır.
+// - Bölüm A: MVP modelleri (Faz 1–6 migration'larına girer).
+// - Bölüm B: MVP sonrası modeller (taslak; ilgili fazda yeniden gözden geçirilip eklenir).
+//
+// Prisma'nın ifade edemediği kısıtlar migration'a ham SQL olarak eklenir:
+//   CREATE EXTENSION IF NOT EXISTS postgis;
+//   CREATE EXTENSION IF NOT EXISTS citext;
+//   ALTER TABLE "Match" ADD CONSTRAINT match_ordered_pair CHECK ("userAId" < "userBId");
+//   ALTER TABLE "Like"  ADD CONSTRAINT like_not_self  CHECK ("actorId" <> "targetId");
+//   ALTER TABLE "Pass"  ADD CONSTRAINT pass_not_self  CHECK ("actorId" <> "targetId");
+//   ALTER TABLE "Block" ADD CONSTRAINT block_not_self CHECK ("blockerId" <> "blockedId");
+//   ALTER TABLE "Preference" ADD CONSTRAINT pref_age CHECK ("minAge" >= 18 AND "maxAge" >= "minAge" AND "maxAge" <= 99);
+//   CREATE INDEX profile_location_gix ON "Profile" USING GIST ("location");
+//   AccessLog: UPDATE/DELETE yetkisi uygulama rolünden alınır (yalnızca INSERT; silme saklama işi ayrı rolle).
+//
+// Generator/datasource sözdizimi Faz 1'de kurulan Prisma sürümünün dokümanına göre doğrulanacak.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Enum'lar
+// ─────────────────────────────────────────────────────────────
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED          // geçici; moderasyon
+  BANNED
+  DELETION_PENDING   // 30 gün geri alınabilir
+}
+
+enum Gender {
+  WOMAN
+  MAN
+  NON_BINARY
+  OTHER
+}
+
+enum RelationshipGoal {
+  LONG_TERM
+  LONG_TERM_OPEN_TO_SHORT
+  SHORT_TERM_OPEN_TO_LONG
+  SHORT_TERM
+  NEW_FRIENDS
+  NOT_SURE
+}
+
+enum Frequency {
+  NEVER
+  SOMETIMES
+  OFTEN
+  PREFER_NOT_TO_SAY
+}
+
+enum CommunicationStyle {
+  TEXTER
+  CALLER
+  IN_PERSON
+  MIXED
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_REVIEW
+}
+
+enum ConsentType {
+  PRIVACY_NOTICE_ACK               // aydınlatma metni okundu (rıza değil, kayıt)
+  TERMS_OF_SERVICE
+  SPECIAL_CATEGORY_ORIENTATION     // KVKK m.6 — aranan cinsiyet / yönelim
+  CROSS_BORDER_TRANSFER            // gerekiyorsa (hukuki teyit)
+  PRECISE_LOCATION
+  MARKETING_NOTIFICATIONS
+}
+
+enum VerificationType {
+  PHONE
+  SELFIE_LIVENESS
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum MatchStatus {
+  ACTIVE
+  UNMATCHED
+}
+
+enum ConversationKind {
+  DIRECT       // Match'ten doğan 1:1
+  GROUP        // Double Date (Faz 13)
+}
+
+enum MessageType {
+  TEXT
+  SYSTEM       // "Eşleştiniz" vb.
+}
+
+enum ReportReason {
+  UNDERAGE
+  NUDITY_SEXUAL
+  HARASSMENT
+  HATE
+  SCAM_SPAM
+  FAKE_PROFILE
+  VIOLENCE_THREAT
+  OFFLINE_BEHAVIOR
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  ACTION_TAKEN
+  DISMISSED
+}
+
+enum ReportTargetType {
+  PROFILE
+  PHOTO
+  MESSAGE
+  VOICE
+}
+
+enum ModerationSubject {
+  PHOTO
+  BIO
+  MESSAGE
+  VOICE
+  USER
+}
+
+enum ModerationActor {
+  AUTOMATED
+  ADMIN
+}
+
+enum Platform {
+  IOS
+  ANDROID
+}
+
+enum NotificationType {
+  NEW_MATCH
+  NEW_MESSAGE
+  PHOTO_REJECTED
+  VERIFICATION_RESULT
+  ACCOUNT_ACTION
+  SYSTEM
+}
+
+enum DataRequestType {
+  EXPORT
+  DELETION
+}
+
+enum DataRequestStatus {
+  REQUESTED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+enum AdminRole {
+  MODERATOR
+  SUPPORT
+  ADMIN
+  SUPER_ADMIN
+}
+
+// ─────────────────────────────────────────────────────────────
+// BÖLÜM A — MVP
+// ─────────────────────────────────────────────────────────────
+
+/// Hesap. Kişisel veri minimum: düz telefon, ad-soyad, e-posta yok.
+model User {
+  id             String        @id @default(uuid()) @db.Uuid
+  phoneHash      String        @unique            // HMAC-SHA256(E.164, PHONE_HMAC_KEY)
+  phoneEncrypted Bytes                            // AES-256-GCM; yalnızca SMS için çözülür
+  birthDate      DateTime      @db.Date           // yaş kapısı; profilde yalnızca yaş gösterilir
+  status         AccountStatus @default(ACTIVE)
+  suspendedUntil DateTime?
+  deletionRequestedAt DateTime?
+  lastActiveAt   DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  profile        Profile?
+  preference     Preference?
+  interests      UserInterest[]
+  sessions       Session[]
+  devices        UserDevice[]
+  consents       ConsentRecord[]
+  verifications  Verification[]
+  likesGiven     Like[]          @relation("LikeActor")
+  likesReceived  Like[]          @relation("LikeTarget")
+  passesGiven    Pass[]          @relation("PassActor")
+  passesReceived Pass[]          @relation("PassTarget")
+  matchesAsA     Match[]         @relation("MatchUserA")
+  matchesAsB     Match[]         @relation("MatchUserB")
+  participations ConversationParticipant[]
+  messagesSent   Message[]
+  blocksGiven    Block[]         @relation("BlockBlocker")
+  blocksReceived Block[]         @relation("BlockBlocked")
+  reportsFiled   Report[]        @relation("ReportReporter")
+  reportsAgainst Report[]        @relation("ReportReported")
+  notifications  Notification[]
+  dataRequests   DataRequest[]
+
+  // Bölüm B
+  voiceProfile   VoiceProfile?
+  groupMembers   GroupMember[]
+  planParticipations PlanParticipant[]
+  plansCreated   Plan[]
+  gameAnswers    GameAnswer[]
+  subscriptions  Subscription[]
+
+  @@index([status, lastActiveAt])
+}
+
+/// Refresh token ailesi. Token'ın kendisi değil, SHA-256 hash'i saklanır.
+model Session {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  refreshTokenHash String    @unique
+  previousTokenHash String?  @unique              // rotasyon: eski token tekrar gelirse → yeniden kullanım tespiti
+  deviceId         String?                        // istemcinin ürettiği kalıcı cihaz kimliği
+  userAgent        String?
+  createdAt        DateTime  @default(now())
+  lastUsedAt       DateTime  @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+}
+
+model Profile {
+  userId             String              @id @db.Uuid
+  displayName        String              @db.VarChar(40)
+  gender             Gender
+  bio                String?             @db.VarChar(500)
+  bioModeration      ModerationStatus    @default(PENDING)
+  jobTitle           String?             @db.VarChar(60)
+  heightCm           Int?
+  relationshipGoal   RelationshipGoal?
+  smoking            Frequency?
+  drinking           Frequency?
+  exercise           Frequency?
+  wantsChildren      Boolean?
+  communicationStyle CommunicationStyle?
+  cityName           String?             @db.VarChar(80)   // kullanıcının seçtiği görünür konum
+  /// Bulanıklaştırılmış konum (≈1 km ızgara + kullanıcıya özgü sapma). Tam koordinat saklanmaz.
+  location           Unsupported("geography(Point,4326)")?
+  locationUpdatedAt  DateTime?
+  isDiscoverable     Boolean             @default(true)    // kullanıcı keşfetten kendini gizleyebilir
+  completedAt        DateTime?                             // onboarding bitti mi
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos ProfilePhoto[]
+
+  @@index([isDiscoverable, gender])
+}
+
+model ProfilePhoto {
+  id               String           @id @default(uuid()) @db.Uuid
+  profileId        String           @db.Uuid
+  storageKey       String           @unique              // private bucket anahtarı; URL değil
+  position         Int                                   // 0 = ana fotoğraf; servis 0..5 sınırlar
+  width            Int?
+  height           Int?
+  moderationStatus ModerationStatus @default(PENDING)
+  createdAt        DateTime         @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [userId], onDelete: Cascade)
+
+  @@index([profileId, moderationStatus, position])
+}
+
+model Interest {
+  id        Int     @id @default(autoincrement())
+  slug      String  @unique                // "hiking", "jazz"
+  category  String                         // "outdoor", "music"
+  labelTr   String
+  labelEn   String
+  isActive  Boolean @default(true)
+
+  users UserInterest[]
+}
+
+model UserInterest {
+  userId     String @db.Uuid
+  interestId Int
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interest Interest @relation(fields: [interestId], references: [id], onDelete: Restrict)
+
+  @@id([userId, interestId])
+  @@index([interestId])
+}
+
+/// Keşfet tercihleri. seekingGenders özel nitelikli veri: yalnızca SPECIAL_CATEGORY_ORIENTATION rızası varken dolu.
+model Preference {
+  userId           String             @id @db.Uuid
+  minAge           Int                @default(18)
+  maxAge           Int                @default(99)
+  maxDistanceKm    Int                @default(50)
+  seekingGenders   Gender[]
+  relationshipGoals RelationshipGoal[]
+  updatedAt        DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Rıza geçmişi: her verme/geri alma yeni satır (append-only). Güncel durum = türe göre en son satır.
+model ConsentRecord {
+  id          String      @id @default(uuid()) @db.Uuid
+  userId      String      @db.Uuid
+  type        ConsentType
+  granted     Boolean
+  textVersion String                       // rıza metni sürümü, ör. "orientation-tr-2026-11"
+  ipAddress   String?
+  createdAt   DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, createdAt])
+}
+
+model Verification {
+  id          String             @id @default(uuid()) @db.Uuid
+  userId      String             @db.Uuid
+  type        VerificationType
+  status      VerificationStatus @default(PENDING)
+  provider    String?                          // sağlayıcı adı
+  providerRef String?                          // sağlayıcı işlem kimliği; biyometrik veri saklanmaz
+  reviewedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, status])
+}
+
+model Like {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String   @db.Uuid
+  targetId  String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  actor  User @relation("LikeActor", fields: [actorId], references: [id], onDelete: Cascade)
+  target User @relation("LikeTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([actorId, targetId])
+  @@index([targetId, createdAt])   // "seni beğenenler" (Premium) + karşılıklı kontrol
+}
+
+model Pass {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String   @db.Uuid
+  targetId  String   @db.Uuid
+  expiresAt DateTime                // bu tarihten sonra aday yeniden gösterilebilir
+  createdAt DateTime @default(now())
+
+  actor  User @relation("PassActor", fields: [actorId], references: [id], onDelete: Cascade)
+  target User @relation("PassTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([actorId, targetId])     // tekrar pass → upsert, expiresAt güncellenir
+  @@index([actorId, expiresAt])
+}
+
+/// Sıralı çift: userAId < userBId (CHECK, ham SQL). Aynı çift için tek satır.
+model Match {
+  id            String      @id @default(uuid()) @db.Uuid
+  userAId       String      @db.Uuid
+  userBId       String      @db.Uuid
+  status        MatchStatus @default(ACTIVE)
+  unmatchedById String?     @db.Uuid
+  unmatchedAt   DateTime?
+  createdAt     DateTime    @default(now())
+
+  userA        User          @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB        User          @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  conversation Conversation?
+
+  @@unique([userAId, userBId])
+  @@index([userBId, status])
+  @@index([userAId, status])
+}
+
+model Conversation {
+  id            String           @id @default(uuid()) @db.Uuid
+  kind          ConversationKind @default(DIRECT)
+  matchId       String?          @unique @db.Uuid
+  groupMatchId  String?          @unique @db.Uuid   // Faz 13
+  lastMessageAt DateTime?
+  createdAt     DateTime         @default(now())
+
+  match        Match?                    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([lastMessageAt])
+}
+
+/// Erişim kontrolünün tek kaynağı: kullanıcı sohbete ancak burada aktif satırı varsa erişir.
+model ConversationParticipant {
+  conversationId    String    @db.Uuid
+  userId            String    @db.Uuid
+  joinedAt          DateTime  @default(now())
+  leftAt            DateTime?                 // unmatch / engelleme
+  lastReadMessageId String?   @db.Uuid
+  mutedUntil        DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId, leftAt])
+}
+
+model Message {
+  id             String      @id @default(uuid()) @db.Uuid   // istemci üretir → idempotent gönderim
+  conversationId String      @db.Uuid
+  senderId       String?     @db.Uuid                         // SYSTEM mesajlarında null
+  type           MessageType @default(TEXT)
+  body           String      @db.VarChar(2000)
+  flagged        Boolean     @default(false)                  // otomatik metin kontrolü uyarısı
+  createdAt      DateTime    @default(now())
+  editedAt       DateTime?
+  deletedAt      DateTime?                                    // gönderen sildi; body boşaltılır
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt(sort: Desc)])
+}
+
+model Block {
+  blockerId String   @db.Uuid
+  blockedId String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  blocker User @relation("BlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("BlockBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])          // iki yönlü filtre için
+}
+
+/// Şikayet, şikayet edilen hesap silinse bile inceleme/yasal süre boyunca korunur (SetNull + evidence).
+model Report {
+  id               String           @id @default(uuid()) @db.Uuid
+  reporterId       String?          @db.Uuid
+  reportedUserId   String?          @db.Uuid
+  reason           ReportReason
+  targetType       ReportTargetType
+  targetId         String?          @db.Uuid   // photo/message id
+  comment          String?          @db.VarChar(1000)
+  /// Kanıt anlık görüntüsü (mesaj metni, fotoğraf kopyası anahtarı). Saklama süresi sonunda temizlenir.
+  evidence         Json?
+  status           ReportStatus     @default(OPEN)
+  priority         Int              @default(0)   // UNDERAGE / VIOLENCE_THREAT en yüksek
+  handledByAdminId String?          @db.Uuid
+  resolutionNote   String?
+  createdAt        DateTime         @default(now())
+  resolvedAt       DateTime?
+  evidencePurgeAt  DateTime?
+
+  reporter      User?      @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  reportedUser  User?      @relation("ReportReported", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  handledBy     AdminUser? @relation(fields: [handledByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([status, priority, createdAt])
+  @@index([reportedUserId])
+}
+
+/// Otomatik veya manuel moderasyon kararlarının geçmişi.
+model ModerationDecision {
+  id          String            @id @default(uuid()) @db.Uuid
+  subjectType ModerationSubject
+  subjectId   String            @db.Uuid
+  userId      String?           @db.Uuid       // içeriğin sahibi (silinse de kayıt kalır)
+  actor       ModerationActor
+  adminId     String?           @db.Uuid
+  provider    String?
+  result      ModerationStatus
+  labels      Json?                            // sağlayıcı etiketleri + skorlar
+  createdAt   DateTime          @default(now())
+
+  admin AdminUser? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([subjectType, subjectId])
+  @@index([result, createdAt])
+}
+
+model UserDevice {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  platform   Platform
+  pushToken  String    @unique                 // cihaz başka hesaba geçerse sahiplik devredilir
+  appVersion String?
+  locale     String?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  disabledAt DateTime?                         // geçersiz token geri bildirimi
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  type      NotificationType
+  data      Json                                // { matchId } vb. — mesaj metni yok
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+}
+
+model DataRequest {
+  id          String            @id @default(uuid()) @db.Uuid
+  userId      String?           @db.Uuid        // silme tamamlanınca null; kayıt uyum kanıtı olarak kalır
+  type        DataRequestType
+  status      DataRequestStatus @default(REQUESTED)
+  resultKey   String?                           // export dosyası (süreli)
+  requestedAt DateTime          @default(now())
+  scheduledFor DateTime?                        // silme: requestedAt + 30 gün
+  completedAt DateTime?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, scheduledFor])
+}
+
+model AdminUser {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  passwordHash String                          // argon2id
+  totpSecretEncrypted Bytes?
+  role         AdminRole @default(MODERATOR)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  auditLogs           AuditLog[]
+  reportsHandled      Report[]
+  moderationDecisions ModerationDecision[]
+}
+
+/// Önemli admin ve güvenlik işlemleri. Append-only.
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  adminId    String?  @db.Uuid
+  action     String                           // "user.suspend", "photo.reject", "report.resolve"
+  targetType String
+  targetId   String?
+  metadata   Json?                            // hassas veri içermez
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  admin AdminUser? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([targetType, targetId])
+  @@index([adminId, createdAt])
+}
+
+/// 5651 trafik/erişim kaydı. FK yok: kullanıcı silinse de yasal süre boyunca kalır. Append-only.
+model AccessLog {
+  id        BigInt   @id @default(autoincrement())
+  userId    String?  @db.Uuid
+  ipAddress String
+  port      Int?
+  action    String                            // "auth.login", "message.send", "photo.upload"
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// BÖLÜM B — MVP sonrası (taslak; ilgili fazda gözden geçirilecek)
+// ─────────────────────────────────────────────────────────────
+
+enum SubscriptionStore {
+  APP_STORE
+  PLAY_STORE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  IN_GRACE_PERIOD
+  IN_BILLING_RETRY
+  EXPIRED
+  REVOKED
+}
+
+enum PlanStatus {
+  PROPOSED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum ParticipantStatus {
+  INVITED
+  ACCEPTED
+  DECLINED
+}
+
+// Faz 10
+model VoiceProfile {
+  userId           String           @id @db.Uuid
+  storageKey       String           @unique
+  durationSec      Int                          // servis ≤ 30 sn sınırlar
+  moderationStatus ModerationStatus @default(PENDING)
+  createdAt        DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Faz 11
+model GameSession {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @db.Uuid
+  gameKey        String                         // soru seti kimliği (içerik kodda/CMS'te)
+  startedAt      DateTime @default(now())
+  completedAt    DateTime?
+
+  answers GameAnswer[]
+
+  @@index([conversationId])
+}
+
+model GameAnswer {
+  id            String   @id @default(uuid()) @db.Uuid
+  gameSessionId String   @db.Uuid
+  userId        String   @db.Uuid
+  questionKey   String
+  answer        String   @db.VarChar(500)
+  createdAt     DateTime @default(now())
+
+  session GameSession @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([gameSessionId, userId, questionKey])
+}
+
+// Faz 13 — Double Date: iki kişilik grup
+model Group {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String?  @db.VarChar(40)
+  createdAt DateTime @default(now())
+
+  members GroupMember[]
+}
+
+model GroupMember {
+  groupId  String            @db.Uuid
+  userId   String            @db.Uuid
+  status   ParticipantStatus @default(INVITED)
+  joinedAt DateTime?
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@index([userId])
+}
+
+// Faz 12 — Date Planner
+model Plan {
+  id             String     @id @default(uuid()) @db.Uuid
+  conversationId String     @db.Uuid
+  createdById    String     @db.Uuid
+  title          String     @db.VarChar(80)
+  activityType   String?
+  /// Mekân adı/ilçe; tam adres opsiyonel ve yalnızca katılımcılara görünür
+  placeName      String?    @db.VarChar(120)
+  startsAt       DateTime?
+  status         PlanStatus @default(PROPOSED)
+  createdAt      DateTime   @default(now())
+
+  createdBy    User              @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  participants PlanParticipant[]
+
+  @@index([conversationId])
+}
+
+model PlanParticipant {
+  planId      String            @db.Uuid
+  userId      String            @db.Uuid
+  status      ParticipantStatus @default(INVITED)
+  respondedAt DateTime?
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([planId, userId])
+  @@index([userId])
+}
+
+// Faz 8 — Premium (mağaza içi satın alma; yetki kaynağı sunucu)
+model Subscription {
+  id                    String             @id @default(uuid()) @db.Uuid
+  userId                String             @db.Uuid
+  store                 SubscriptionStore
+  productId             String
+  originalTransactionId String             @unique
+  status                SubscriptionStatus
+  currentPeriodEnd      DateTime
+  autoRenew             Boolean            @default(true)
+  updatedAt             DateTime           @updatedAt
+  createdAt             DateTime           @default(now())
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions StoreTransaction[]
+
+  @@index([userId, status])
+}
+
+/// Brief'teki "Payment": mağaza işlemleri (yenileme, iade). Kart verisi hiçbir zaman tutulmaz.
+model StoreTransaction {
+  id             String   @id @default(uuid()) @db.Uuid
+  subscriptionId String   @db.Uuid
+  transactionId  String   @unique                 // mağaza işlem kimliği → webhook idempotency
+  eventType      String                            // "INITIAL_BUY", "RENEWAL", "REFUND"...
+  priceMicros    BigInt?
+  currency       String?  @db.Char(3)
+  occurredAt     DateTime
+  rawPayloadHash String                            // imzalı payload'ın hash'i (denetim)
+  createdAt      DateTime @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId, occurredAt])
+}

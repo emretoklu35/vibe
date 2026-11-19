@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+apps/api/src/generated
+apps/api/prisma/migrations
+apps/mobile/.expo
+apps/mobile/ios
+apps/mobile/android
+docs/04-schema.prisma
+package-lock.json

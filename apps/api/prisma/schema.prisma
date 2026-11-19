@@ -1,0 +1,25 @@
+// VIBE veritabanı şeması. Tasarım taslağı: docs/04-schema.prisma.
+// Modeller ilgili fazda eklenir; Prisma'nın ifade edemediği kısıtlar (CHECK, PostGIS, GIST)
+// migration dosyalarına ham SQL olarak yazılır.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// İlgi alanı kataloğu. Kullanımdaki bir öğe silinmez, isActive=false yapılır.
+model Interest {
+  id       Int     @id @default(autoincrement())
+  slug     String  @unique
+  category String
+  labelTr  String
+  labelEn  String
+  isActive Boolean @default(true)
+
+  @@index([category])
+}

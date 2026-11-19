@@ -1,0 +1,35 @@
+# bağımlılıklar
+node_modules/
+
+# ortam değişkenleri (örnekler hariç)
+.env
+.env.*
+!.env.example
+
+# derleme / test çıktıları
+dist/
+coverage/
+*.tsbuildinfo
+
+# Prisma tarafından üretilen istemci
+apps/api/src/generated/
+
+# Expo
+.expo/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+# Continuous Native Generation: yerel projeler üretilir, commit edilmez
+apps/mobile/ios/
+apps/mobile/android/
+.kotlin/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+
+# log / sistem
+npm-debug.*
+.DS_Store

@@ -1,0 +1,58 @@
+# Kararlar ve Açık Konular
+
+Son güncelleme: 2026-11-19
+
+## Verilen kararlar (2026-11-19)
+
+| #   | Konu             | Karar                                                                                                         | Sonuç                                                                                                                                                                                                                            |
+| --- | ---------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| K1  | Backend          | **NestJS + Prisma + PostgreSQL + Redis + Socket.IO** (brief'teki yığın)                                       | Modüler monolit. Supabase kullanılmıyor.                                                                                                                                                                                         |
+| K2  | Giriş yöntemi    | **Telefon + SMS OTP**                                                                                         | Kullanıcı parolası yok. Brief'teki `register/login` yerine `otp/request` + `otp/verify`. Parola yalnızca admin paneli için (argon2id + TOTP). Apple/Google ile giriş şimdilik yok — eklenirse ikisi birlikte eklenir.            |
+| K3  | MVP kapsamı      | **Çekirdek**: kayıt/doğrulama, profil, keşfet, beğen/geç, eşleşme, sohbet, engelle/şikayet, moderasyon, admin | Voice, Games, Double Date, Date Planner, Premium, LLM tabanlı AI Matchmaker MVP sonrası.                                                                                                                                         |
+| K4  | Lansman          | **Türkiye geneli**                                                                                            | Kullanıcı yoğunluğu düşük kalabilir → bkz. [08-RISKLER.md](08-RISKLER.md) R1. Mimari çok ülkeye açık.                                                                                                                            |
+| K5  | Paket yöneticisi | **npm workspaces** (Faz 1, 2026-11-19)                                                                        | pnpm makinede kurulu değildi, Node 26'da corepack yok, global kurulum sudo istiyordu. npm ek araç gerektirmez; Expo monorepo rehberi npm'i destekliyor. Kurulum betikleri `package.json` → `allowScripts` ile tek tek onaylanır. |
+
+## Brief'e eklenen değerlendirme notları → nereye işlendi
+
+| Not                                                                             | İşlendiği yer                                                                                       |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| KVKK özel nitelikli veri (cinsel yönelim / aranan cinsiyet) için ayrı açık rıza | `ConsentRecord` modeli, [01-MIMARI.md §7](01-MIMARI.md), [05-API.md](05-API.md) `/privacy/consents` |
+| Yurt dışı veri aktarımı (S3, Sentry, FCM/APNs, AI sağlayıcısı)                  | [01-MIMARI.md §7.3](01-MIMARI.md), R4                                                               |
+| 5651 sayılı kanun (log saklama, içerik kaldırma)                                | [01-MIMARI.md §7.4](01-MIMARI.md), `AccessLog`, R5                                                  |
+| 18+ doğrulama                                                                   | [01-MIMARI.md §7.5](01-MIMARI.md), `Verification`, R3                                               |
+| Uygulama içi satın alma + sunucu tarafı makbuz doğrulama                        | [01-MIMARI.md §5.14](01-MIMARI.md), `Subscription`/`StoreTransaction`, Faz 8                        |
+| Konum yuvarlama / sapma (trilateration)                                         | [01-MIMARI.md §6](01-MIMARI.md), R2                                                                 |
+| `Pass` varlığı                                                                  | [04-schema.prisma](04-schema.prisma) `Pass`                                                         |
+| `Match` için sıralı çift + unique                                               | `Match` (`userAId < userBId` CHECK + `@@unique`)                                                    |
+| Fotoğraf moderasyonu                                                            | Safety modülü, `ProfilePhoto.moderationStatus`, `ModerationDecision`                                |
+
+## Hâlâ açık olan kararlar
+
+Faz 1 öncesi gerekli olanlar **kalın**.
+
+### Ürün
+
+1. **Doğrulama zorunluluğu:** Selfie/canlılık doğrulaması mesajlaşma için zorunlu mu, yoksa yalnızca "doğrulanmış" rozeti mi? (Öneri: MVP'de rozet + şikayet alan hesaplar için zorunlu.)
+2. Cinsiyet seçenekleri ve "aranan cinsiyet" listesi (özel nitelikli veri; rıza vermeyen kullanıcının keşfet deneyimi nasıl olacak?).
+3. Günlük beğeni limiti var mı? (Premium'a hazırlık; MVP'de yalnızca spam limiti önerilir.)
+4. Geçilen (pass) profil ne kadar sonra yeniden gösterilsin? (Öneri: 30 gün.)
+5. Eşleşme bitirme (unmatch) sonrası sohbet: her iki taraftan da gizlenir; şikayet için kanıt saklanır.
+6. AI Matchmaker MVP'de yalnızca kural tabanlı "neden uyumlusunuz" açıklaması olarak mı yer alsın? (Öneri: evet; LLM onboarding Faz 9.)
+7. Hesap silmede bekleme süresi (Öneri: 30 gün geri alınabilir, sonra kalıcı silme.)
+
+### Teknik / altyapı
+
+8. **Barındırma bölgesi:** Türkiye'de (yerli bulut) mi, AB'de (ör. Frankfurt) mi? KVKK yurt dışı aktarım yükünü belirler.
+9. **SMS sağlayıcısı:** Yerli (Netgsm, İleti Merkezi vb.) mi, global (Twilio Verify vb.) mi?
+10. ~~Paket yöneticisi~~ → K5 ile karar verildi (npm workspaces).
+11. Push: FCM/APNs doğrudan mı (brief), Expo Push Service mi? (Öneri: doğrudan; daha az üçüncü taraf aktarımı.)
+12. Fotoğraf moderasyon sağlayıcısı (AWS Rekognition, Sightengine, Hive vb.) ve yurt dışı aktarım durumu.
+13. Admin paneli: ayrı web uygulaması (öneri, Faz 6) mı, yalnızca API + basit iç araç mı?
+14. Selfie/canlılık doğrulama sağlayıcısı.
+
+### Hukuki (avukat görüşü gerekli)
+
+15. Aydınlatma metni, açık rıza metinleri, kullanım koşulları, topluluk kuralları.
+16. VERBİS kaydı ve yurt dışı aktarım için standart sözleşme bildirimleri.
+17. 5651 kapsamındaki rol (yer sağlayıcı / sosyal ağ sağlayıcı eşikleri) ve log saklama süreleri.
+18. Ticari elektronik ileti (İYS) — pazarlama bildirimleri için.
