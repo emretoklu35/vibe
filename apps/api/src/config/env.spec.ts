@@ -11,6 +11,7 @@ const base = {
   PHONE_HMAC_KEY: key(32),
   PHONE_ENCRYPTION_KEY: key(32),
   JWT_ACCESS_SECRET: key(32),
+  JWT_ADMIN_SECRET: key(32),
 };
 
 describe('parseEnv', () => {

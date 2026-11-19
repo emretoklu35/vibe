@@ -204,7 +204,15 @@ export type ErrorBodyDto = {
     | 'DISCOVERY_NOT_READY'
     | 'CANNOT_TARGET_SELF'
     | 'MESSAGE_ID_CONFLICT'
-    | 'EMPTY_MESSAGE';
+    | 'EMPTY_MESSAGE'
+    | 'CONTACT_INFO_NOT_ALLOWED'
+    | 'ALREADY_REPORTED'
+    | 'VERIFICATION_NOT_PENDING'
+    | 'VERIFICATION_ALREADY_PENDING'
+    | 'ALREADY_VERIFIED'
+    | 'ADMIN_LOGIN_FAILED'
+    | 'ADMIN_LOCKED'
+    | 'ADMIN_FORBIDDEN';
   message: string;
   /**
    * Hataya özgü ayrıntılar (ör. alan hataları)
@@ -250,6 +258,25 @@ export type ConsentDecisionDto = {
 
 export type RecordConsentsDto = {
   decisions: Array<ConsentDecisionDto>;
+};
+
+export type ExportStatusDto = {
+  id: string;
+  status: 'REQUESTED' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED' | 'FAILED';
+  requestedAt: string;
+  completedAt: string | null;
+  /**
+   * 10 dk geçerli indirme adresi
+   */
+  downloadUrl: string | null;
+  /**
+   * Dosyanın silineceği an
+   */
+  expiresAt: string | null;
+};
+
+export type ExportStatusResponseDto = {
+  data: ExportStatusDto | null;
 };
 
 export type InterestDto = {
@@ -429,7 +456,14 @@ export type ReorderPhotosDto = {
  * Keşfeti açmak için eksik olanlar
  */
 export type DiscoveryRequirement =
-  'PROFILE' | 'APPROVED_PHOTO' | 'LOCATION' | 'ORIENTATION_CONSENT' | 'SEEKING_GENDERS' | 'VISIBLE';
+  | 'PROFILE'
+  | 'APPROVED_PHOTO'
+  | 'LOCATION'
+  | 'ORIENTATION_CONSENT'
+  | 'SEEKING_GENDERS'
+  | 'VISIBLE'
+  | 'VERIFICATION'
+  | 'UNDER_REVIEW';
 
 export type DiscoveryStatusDto = {
   ready: boolean;
@@ -466,6 +500,10 @@ export type ProfileCardDto = {
   displayName: string;
   age: number;
   gender: Gender;
+  /**
+   * Selfie doğrulaması onaylı (rozet)
+   */
+  verified: boolean;
   cityName: string | null;
   /**
    * Yuvarlanmış mesafe; ör. "2 km'den yakın", "100+ km"
@@ -515,6 +553,10 @@ export type LikeResponseDto = {
 export type MatchUserDto = {
   userId: string;
   displayName: string;
+  /**
+   * Selfie doğrulaması onaylı
+   */
+  verified: boolean;
   age: number;
   /**
    * Ana fotoğraf (10 dk geçerli)
@@ -551,6 +593,10 @@ export type MatchDetailResponseDto = {
 export type ConversationUserDto = {
   userId: string;
   displayName: string;
+  /**
+   * Selfie doğrulaması onaylı
+   */
+  verified: boolean;
   age: number;
   photoUrl: string | null;
 };
@@ -566,6 +612,10 @@ export type MessageDto = {
    * Silinmiş mesajlarda boş
    */
   body: string;
+  /**
+   * İletişim bilgisi/bağlantı içeriyor: alıcıya dolandırıcılık uyarısı gösterilmeli
+   */
+  flagged: boolean;
   createdAt: string;
   deletedAt: string | null;
 };
@@ -671,6 +721,275 @@ export type BlockedUserDto = {
 
 export type BlocksResponseDto = {
   data: Array<BlockedUserDto>;
+};
+
+export type ReportReason =
+  | 'UNDERAGE'
+  | 'NUDITY_SEXUAL'
+  | 'HARASSMENT'
+  | 'HATE'
+  | 'SCAM_SPAM'
+  | 'FAKE_PROFILE'
+  | 'VIOLENCE_THREAT'
+  | 'OFFLINE_BEHAVIOR'
+  | 'OTHER';
+
+export type ReportTargetType = 'PROFILE' | 'PHOTO' | 'MESSAGE';
+
+export type CreateReportDto = {
+  /**
+   * Şikayet edilen kişi
+   */
+  userId: string;
+  reason: ReportReason;
+  targetType: ReportTargetType;
+  /**
+   * PHOTO veya MESSAGE için ilgili kimlik
+   */
+  targetId?: string;
+  comment?: string;
+  /**
+   * Şikayetle birlikte engelle
+   */
+  alsoBlock?: boolean;
+};
+
+export type ReportStatus = 'OPEN' | 'IN_REVIEW' | 'ACTION_TAKEN' | 'DISMISSED';
+
+export type ReportCreatedDto = {
+  id: string;
+  status: ReportStatus;
+};
+
+export type ReportCreatedResponseDto = {
+  data: ReportCreatedDto;
+};
+
+export type VerificationStatusDto = {
+  status: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  /**
+   * Profil doğrulanmış (rozet)
+   */
+  verified: boolean;
+  /**
+   * Moderatör doğrulama istedi; yapılana kadar keşfette görünmezsin
+   */
+  required: boolean;
+  /**
+   * Ret gerekçesi
+   */
+  note?: string | null;
+};
+
+export type VerificationStatusResponseDto = {
+  data: VerificationStatusDto;
+};
+
+export type CreateSelfieUploadDto = {
+  contentType: 'image/jpeg' | 'image/png' | 'image/webp';
+  sizeBytes: number;
+};
+
+export type SelfieUploadDto = {
+  verificationId: string;
+  uploadUrl: string;
+  uploadHeaders: {
+    [key: string]: string;
+  };
+};
+
+export type SelfieUploadResponseDto = {
+  data: SelfieUploadDto;
+};
+
+export type AdminLoginDto = {
+  email: string;
+  password: string;
+  totp: string;
+};
+
+export type AdminRole = 'MODERATOR' | 'SUPPORT' | 'ADMIN' | 'SUPER_ADMIN';
+
+export type AdminIdentityDto = {
+  id: string;
+  email: string;
+  role: AdminRole;
+};
+
+export type AdminLoginDataDto = {
+  token: string;
+  expiresAt: string;
+  admin: AdminIdentityDto;
+};
+
+export type AdminLoginResponseDto = {
+  data: AdminLoginDataDto;
+};
+
+export type AdminMeResponseDto = {
+  data: AdminIdentityDto;
+};
+
+export type ReportSummaryDto = {
+  id: string;
+  reason: ReportReason;
+  status: ReportStatus;
+  targetType: ReportTargetType;
+  priority: number;
+  reportedUserId: string | null;
+  reportedName: string | null;
+  /**
+   * Bu kişi hakkındaki açık şikayet sayısı
+   */
+  openReportsAgainst: number;
+  createdAt: string;
+};
+
+export type ReportsResponseDto = {
+  data: Array<ReportSummaryDto>;
+};
+
+export type ReportDetailDto = {
+  id: string;
+  reason: ReportReason;
+  status: ReportStatus;
+  targetType: ReportTargetType;
+  priority: number;
+  reportedUserId: string | null;
+  reportedName: string | null;
+  /**
+   * Bu kişi hakkındaki açık şikayet sayısı
+   */
+  openReportsAgainst: number;
+  createdAt: string;
+  comment: string | null;
+  reporterId: string | null;
+  /**
+   * Şikayet anındaki kanıt
+   */
+  evidence: {
+    [key: string]: unknown;
+  };
+  /**
+   * Kanıt fotoğrafları (10 dk geçerli adresler)
+   */
+  evidencePhotoUrls: Array<string>;
+  resolutionNote: string | null;
+  resolvedAt: string | null;
+  handledBy: string | null;
+};
+
+export type ReportDetailResponseDto = {
+  data: ReportDetailDto;
+};
+
+export type UpdateReportDto = {
+  status: 'IN_REVIEW' | 'ACTION_TAKEN' | 'DISMISSED';
+  note?: string;
+};
+
+export type ReviewPhotoDto = {
+  id: string;
+  userId: string;
+  status: PhotoStatus;
+  url: string;
+  labels: {
+    [key: string]: unknown;
+  } | null;
+  createdAt: string;
+};
+
+export type ReviewPhotosResponseDto = {
+  data: Array<ReviewPhotoDto>;
+};
+
+export type DecisionDto = {
+  decision: 'APPROVED' | 'REJECTED';
+  /**
+   * Selfie reddinde kullanıcıya gösterilir
+   */
+  note?: string;
+};
+
+export type VerificationReviewDto = {
+  id: string;
+  userId: string;
+  displayName: string | null;
+  submittedAt: string | null;
+  selfieUrl: string | null;
+  profilePhotoUrls: Array<string>;
+};
+
+export type VerificationsResponseDto = {
+  data: Array<VerificationReviewDto>;
+};
+
+export type AdminUserPhotoDto = {
+  id: string;
+  status: PhotoStatus;
+  url: string | null;
+};
+
+export type AdminUserReportDto = {
+  id: string;
+  reason: ReportReason;
+  status: ReportStatus;
+  createdAt: string;
+};
+
+export type AdminUserDto = {
+  id: string;
+  status: string;
+  suspendedUntil: string | null;
+  displayName: string | null;
+  age: number | null;
+  bio: string | null;
+  verified: boolean;
+  verificationRequired: boolean;
+  moderationHold: boolean;
+  createdAt: string;
+  lastActiveAt: string;
+  photos: Array<AdminUserPhotoDto>;
+  /**
+   * Bu kişi hakkındaki şikayetler
+   */
+  reportsAgainst: Array<AdminUserReportDto>;
+  reportsFiled: number;
+};
+
+export type AdminUserResponseDto = {
+  data: AdminUserDto;
+};
+
+export type UserAction =
+  'SUSPEND' | 'BAN' | 'RESTORE' | 'REQUIRE_VERIFICATION' | 'HOLD' | 'RELEASE_HOLD';
+
+export type UserActionDto = {
+  action: UserAction;
+  /**
+   * Denetim kaydına yazılır
+   */
+  reason: string;
+  /**
+   * SUSPEND için gün
+   */
+  days?: number;
+};
+
+export type AuditLogDto = {
+  id: string;
+  adminEmail: string | null;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  metadata: {
+    [key: string]: unknown;
+  } | null;
+  createdAt: string;
+};
+
+export type AuditLogsResponseDto = {
+  data: Array<AuditLogDto>;
 };
 
 export type LiveDataDto = {
@@ -901,6 +1220,34 @@ export type PrivacyControllerRecordV1Responses = {
 
 export type PrivacyControllerRecordV1Response =
   PrivacyControllerRecordV1Responses[keyof PrivacyControllerRecordV1Responses];
+
+export type PrivacyControllerExportStatusV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/privacy/export';
+};
+
+export type PrivacyControllerExportStatusV1Responses = {
+  200: ExportStatusResponseDto;
+};
+
+export type PrivacyControllerExportStatusV1Response =
+  PrivacyControllerExportStatusV1Responses[keyof PrivacyControllerExportStatusV1Responses];
+
+export type PrivacyControllerRequestExportV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/privacy/export';
+};
+
+export type PrivacyControllerRequestExportV1Responses = {
+  200: ExportStatusResponseDto;
+};
+
+export type PrivacyControllerRequestExportV1Response =
+  PrivacyControllerRequestExportV1Responses[keyof PrivacyControllerRequestExportV1Responses];
 
 export type ProfilesControllerInterestsV1Data = {
   body?: never;
@@ -1383,6 +1730,260 @@ export type BlocksControllerUnblockV1Responses = {
 
 export type BlocksControllerUnblockV1Response =
   BlocksControllerUnblockV1Responses[keyof BlocksControllerUnblockV1Responses];
+
+export type SafetyControllerReportV1Data = {
+  body: CreateReportDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/safety/reports';
+};
+
+export type SafetyControllerReportV1Responses = {
+  201: ReportCreatedResponseDto;
+};
+
+export type SafetyControllerReportV1Response =
+  SafetyControllerReportV1Responses[keyof SafetyControllerReportV1Responses];
+
+export type SafetyControllerVerificationStatusV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/safety/verification';
+};
+
+export type SafetyControllerVerificationStatusV1Responses = {
+  200: VerificationStatusResponseDto;
+};
+
+export type SafetyControllerVerificationStatusV1Response =
+  SafetyControllerVerificationStatusV1Responses[keyof SafetyControllerVerificationStatusV1Responses];
+
+export type SafetyControllerSelfieUploadV1Data = {
+  body: CreateSelfieUploadDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/safety/verification/upload-url';
+};
+
+export type SafetyControllerSelfieUploadV1Responses = {
+  201: SelfieUploadResponseDto;
+};
+
+export type SafetyControllerSelfieUploadV1Response =
+  SafetyControllerSelfieUploadV1Responses[keyof SafetyControllerSelfieUploadV1Responses];
+
+export type SafetyControllerSubmitV1Data = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/safety/verification/{id}/submit';
+};
+
+export type SafetyControllerSubmitV1Responses = {
+  200: VerificationStatusResponseDto;
+};
+
+export type SafetyControllerSubmitV1Response =
+  SafetyControllerSubmitV1Responses[keyof SafetyControllerSubmitV1Responses];
+
+export type AdminAuthControllerLoginV1Data = {
+  body: AdminLoginDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/admin/auth/login';
+};
+
+export type AdminAuthControllerLoginV1Responses = {
+  200: AdminLoginResponseDto;
+};
+
+export type AdminAuthControllerLoginV1Response =
+  AdminAuthControllerLoginV1Responses[keyof AdminAuthControllerLoginV1Responses];
+
+export type AdminAuthControllerMeV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/admin/auth/me';
+};
+
+export type AdminAuthControllerMeV1Responses = {
+  200: AdminMeResponseDto;
+};
+
+export type AdminAuthControllerMeV1Response =
+  AdminAuthControllerMeV1Responses[keyof AdminAuthControllerMeV1Responses];
+
+export type AdminAuthControllerLogoutV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/admin/auth/logout';
+};
+
+export type AdminAuthControllerLogoutV1Responses = {
+  204: void;
+};
+
+export type AdminAuthControllerLogoutV1Response =
+  AdminAuthControllerLogoutV1Responses[keyof AdminAuthControllerLogoutV1Responses];
+
+export type AdminControllerReportsV1Data = {
+  body?: never;
+  path?: never;
+  query?: {
+    status?: ReportStatus;
+  };
+  url: '/api/v1/admin/reports';
+};
+
+export type AdminControllerReportsV1Responses = {
+  200: ReportsResponseDto;
+};
+
+export type AdminControllerReportsV1Response =
+  AdminControllerReportsV1Responses[keyof AdminControllerReportsV1Responses];
+
+export type AdminControllerReportV1Data = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/reports/{id}';
+};
+
+export type AdminControllerReportV1Responses = {
+  200: ReportDetailResponseDto;
+};
+
+export type AdminControllerReportV1Response =
+  AdminControllerReportV1Responses[keyof AdminControllerReportV1Responses];
+
+export type AdminControllerUpdateReportV1Data = {
+  body: UpdateReportDto;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/reports/{id}';
+};
+
+export type AdminControllerUpdateReportV1Responses = {
+  200: ReportDetailResponseDto;
+};
+
+export type AdminControllerUpdateReportV1Response =
+  AdminControllerUpdateReportV1Responses[keyof AdminControllerUpdateReportV1Responses];
+
+export type AdminControllerPhotosV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/admin/moderation/photos';
+};
+
+export type AdminControllerPhotosV1Responses = {
+  200: ReviewPhotosResponseDto;
+};
+
+export type AdminControllerPhotosV1Response =
+  AdminControllerPhotosV1Responses[keyof AdminControllerPhotosV1Responses];
+
+export type AdminControllerDecidePhotoV1Data = {
+  body: DecisionDto;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/moderation/photos/{id}';
+};
+
+export type AdminControllerDecidePhotoV1Responses = {
+  204: void;
+};
+
+export type AdminControllerDecidePhotoV1Response =
+  AdminControllerDecidePhotoV1Responses[keyof AdminControllerDecidePhotoV1Responses];
+
+export type AdminControllerVerificationsV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/admin/verifications';
+};
+
+export type AdminControllerVerificationsV1Responses = {
+  200: VerificationsResponseDto;
+};
+
+export type AdminControllerVerificationsV1Response =
+  AdminControllerVerificationsV1Responses[keyof AdminControllerVerificationsV1Responses];
+
+export type AdminControllerDecideVerificationV1Data = {
+  body: DecisionDto;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/verifications/{id}';
+};
+
+export type AdminControllerDecideVerificationV1Responses = {
+  204: void;
+};
+
+export type AdminControllerDecideVerificationV1Response =
+  AdminControllerDecideVerificationV1Responses[keyof AdminControllerDecideVerificationV1Responses];
+
+export type AdminControllerUserV1Data = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/users/{id}';
+};
+
+export type AdminControllerUserV1Responses = {
+  200: AdminUserResponseDto;
+};
+
+export type AdminControllerUserV1Response =
+  AdminControllerUserV1Responses[keyof AdminControllerUserV1Responses];
+
+export type AdminControllerActV1Data = {
+  body: UserActionDto;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/users/{id}/actions';
+};
+
+export type AdminControllerActV1Responses = {
+  200: AdminUserResponseDto;
+};
+
+export type AdminControllerActV1Response =
+  AdminControllerActV1Responses[keyof AdminControllerActV1Responses];
+
+export type AdminControllerAuditLogsV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/admin/audit-logs';
+};
+
+export type AdminControllerAuditLogsV1Responses = {
+  200: AuditLogsResponseDto;
+};
+
+export type AdminControllerAuditLogsV1Response =
+  AdminControllerAuditLogsV1Responses[keyof AdminControllerAuditLogsV1Responses];
 
 export type HealthControllerLiveV1Data = {
   body?: never;

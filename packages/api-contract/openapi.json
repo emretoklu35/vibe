@@ -379,6 +379,54 @@
         "tags": ["privacy"]
       }
     },
+    "/api/v1/privacy/export": {
+      "post": {
+        "operationId": "PrivacyController_requestExport_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Verilerimi indir (KVKK m.11): dosya arka planda hazırlanır",
+        "tags": ["privacy"]
+      },
+      "get": {
+        "operationId": "PrivacyController_exportStatus_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Son dışa aktarma talebinin durumu ve indirme adresi",
+        "tags": ["privacy"]
+      }
+    },
     "/api/v1/interests": {
       "get": {
         "operationId": "ProfilesController_interests_v1",
@@ -1388,6 +1436,541 @@
         "tags": ["safety"]
       }
     },
+    "/api/v1/safety/reports": {
+      "post": {
+        "description": "Kanıt şikayet anında saklanır. Reşit olmayan şikayetinde ve farklı kişilerden 3 açık şikayette hesap inceleme bitene kadar keşfetten gizlenir. Aynı içerik tekrar şikayet edilirse yeni kayıt açılmaz.",
+        "operationId": "SafetyController_report_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportCreatedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Şikayet et",
+        "tags": ["safety"]
+      }
+    },
+    "/api/v1/safety/verification": {
+      "get": {
+        "operationId": "SafetyController_verificationStatus_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Selfie doğrulama durumu",
+        "tags": ["safety"]
+      }
+    },
+    "/api/v1/safety/verification/upload-url": {
+      "post": {
+        "operationId": "SafetyController_selfieUpload_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSelfieUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfieUploadResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Selfie yükleme adresi al",
+        "tags": ["safety"]
+      }
+    },
+    "/api/v1/safety/verification/{id}/submit": {
+      "post": {
+        "operationId": "SafetyController_submit_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Selfie yüklendi: incelemeye gönder",
+        "tags": ["safety"]
+      }
+    },
+    "/api/v1/admin/auth/login": {
+      "post": {
+        "operationId": "AdminAuthController_login_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Yönetici girişi (e-posta + parola + TOTP)",
+        "tags": ["admin"]
+      }
+    },
+    "/api/v1/admin/auth/me": {
+      "get": {
+        "operationId": "AdminAuthController_me_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["admin"]
+      }
+    },
+    "/api/v1/admin/auth/logout": {
+      "post": {
+        "operationId": "AdminAuthController_logout_v1",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["admin"]
+      }
+    },
+    "/api/v1/admin/reports": {
+      "get": {
+        "operationId": "AdminController_reports_v1",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ReportStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Şikayet kuyruğu (öncelik sırasıyla)",
+        "tags": ["admin"]
+      }
+    },
+    "/api/v1/admin/reports/{id}": {
+      "get": {
+        "operationId": "AdminController_report_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["admin"]
+      },
+      "patch": {
+        "operationId": "AdminController_updateReport_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Şikayet durumunu güncelle",
+        "tags": ["admin"]
+      }
+    },
+    "/api/v1/admin/moderation/photos": {
+      "get": {
+        "operationId": "AdminController_photos_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewPhotosResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "İnceleme bekleyen fotoğraflar",
+        "tags": ["admin"]
+      }
+    },
+    "/api/v1/admin/moderation/photos/{id}": {
+      "post": {
+        "operationId": "AdminController_decidePhoto_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["admin"]
+      }
+    },
+    "/api/v1/admin/verifications": {
+      "get": {
+        "operationId": "AdminController_verifications_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "İnceleme bekleyen selfie doğrulamaları",
+        "tags": ["admin"]
+      }
+    },
+    "/api/v1/admin/verifications/{id}": {
+      "post": {
+        "operationId": "AdminController_decideVerification_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["admin"]
+      }
+    },
+    "/api/v1/admin/users/{id}": {
+      "get": {
+        "operationId": "AdminController_user_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Hesap özeti (mesaj içerikleri yok; yalnızca şikayet kanıtında görülebilir)",
+        "tags": ["admin"]
+      }
+    },
+    "/api/v1/admin/users/{id}/actions": {
+      "post": {
+        "operationId": "AdminController_act_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Hesap işlemi (askıya alma/ban/geri açma yalnızca ADMIN)",
+        "tags": ["admin"]
+      }
+    },
+    "/api/v1/admin/audit-logs": {
+      "get": {
+        "operationId": "AdminController_auditLogs_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditLogsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Denetim kaydı (son 100)",
+        "tags": ["admin"]
+      }
+    },
     "/api/v1/health/live": {
       "get": {
         "operationId": "HealthController_live_v1",
@@ -1880,7 +2463,15 @@
               "DISCOVERY_NOT_READY",
               "CANNOT_TARGET_SELF",
               "MESSAGE_ID_CONFLICT",
-              "EMPTY_MESSAGE"
+              "EMPTY_MESSAGE",
+              "CONTACT_INFO_NOT_ALLOWED",
+              "ALREADY_REPORTED",
+              "VERIFICATION_NOT_PENDING",
+              "VERIFICATION_ALREADY_PENDING",
+              "ALREADY_VERIFIED",
+              "ADMIN_LOGIN_FAILED",
+              "ADMIN_LOCKED",
+              "ADMIN_FORBIDDEN"
             ],
             "example": "VALIDATION_FAILED"
           },
@@ -1994,6 +2585,55 @@
           }
         },
         "required": ["decisions"]
+      },
+      "ExportStatusDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["REQUESTED", "PROCESSING", "COMPLETED", "CANCELLED", "FAILED"]
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "downloadUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "10 dk geçerli indirme adresi"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Dosyanın silineceği an"
+          }
+        },
+        "required": ["id", "status", "requestedAt", "completedAt", "downloadUrl", "expiresAt"]
+      },
+      "ExportStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExportStatusDto"
+              }
+            ]
+          }
+        },
+        "required": ["data"]
       },
       "InterestDto": {
         "type": "object",
@@ -2521,7 +3161,9 @@
           "LOCATION",
           "ORIENTATION_CONSENT",
           "SEEKING_GENDERS",
-          "VISIBLE"
+          "VISIBLE",
+          "VERIFICATION",
+          "UNDER_REVIEW"
         ],
         "description": "Keşfeti açmak için eksik olanlar"
       },
@@ -2611,6 +3253,10 @@
               }
             ]
           },
+          "verified": {
+            "type": "boolean",
+            "description": "Selfie doğrulaması onaylı (rozet)"
+          },
           "cityName": {
             "type": "string",
             "nullable": true
@@ -2698,6 +3344,7 @@
           "displayName",
           "age",
           "gender",
+          "verified",
           "cityName",
           "distanceLabel",
           "bio",
@@ -2776,6 +3423,10 @@
           "displayName": {
             "type": "string"
           },
+          "verified": {
+            "type": "boolean",
+            "description": "Selfie doğrulaması onaylı"
+          },
           "age": {
             "type": "number"
           },
@@ -2785,7 +3436,7 @@
             "description": "Ana fotoğraf (10 dk geçerli)"
           }
         },
-        "required": ["userId", "displayName", "age", "photoUrl"]
+        "required": ["userId", "displayName", "verified", "age", "photoUrl"]
       },
       "MatchSummaryDto": {
         "type": "object",
@@ -2870,6 +3521,10 @@
           "displayName": {
             "type": "string"
           },
+          "verified": {
+            "type": "boolean",
+            "description": "Selfie doğrulaması onaylı"
+          },
           "age": {
             "type": "number"
           },
@@ -2878,7 +3533,7 @@
             "nullable": true
           }
         },
-        "required": ["userId", "displayName", "age", "photoUrl"]
+        "required": ["userId", "displayName", "verified", "age", "photoUrl"]
       },
       "MessageType": {
         "type": "string",
@@ -2911,6 +3566,10 @@
             "type": "string",
             "description": "Silinmiş mesajlarda boş"
           },
+          "flagged": {
+            "type": "boolean",
+            "description": "İletişim bilgisi/bağlantı içeriyor: alıcıya dolandırıcılık uyarısı gösterilmeli"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -2921,7 +3580,16 @@
             "nullable": true
           }
         },
-        "required": ["id", "conversationId", "senderId", "type", "body", "createdAt", "deletedAt"]
+        "required": [
+          "id",
+          "conversationId",
+          "senderId",
+          "type",
+          "body",
+          "flagged",
+          "createdAt",
+          "deletedAt"
+        ]
       },
       "ConversationDto": {
         "type": "object",
@@ -3167,6 +3835,760 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BlockedUserDto"
+            }
+          }
+        },
+        "required": ["data"]
+      },
+      "ReportReason": {
+        "type": "string",
+        "enum": [
+          "UNDERAGE",
+          "NUDITY_SEXUAL",
+          "HARASSMENT",
+          "HATE",
+          "SCAM_SPAM",
+          "FAKE_PROFILE",
+          "VIOLENCE_THREAT",
+          "OFFLINE_BEHAVIOR",
+          "OTHER"
+        ]
+      },
+      "ReportTargetType": {
+        "type": "string",
+        "enum": ["PROFILE", "PHOTO", "MESSAGE"]
+      },
+      "CreateReportDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Şikayet edilen kişi"
+          },
+          "reason": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReportReason"
+              }
+            ]
+          },
+          "targetType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReportTargetType"
+              }
+            ]
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "PHOTO veya MESSAGE için ilgili kimlik"
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "alsoBlock": {
+            "type": "boolean",
+            "description": "Şikayetle birlikte engelle"
+          }
+        },
+        "required": ["userId", "reason", "targetType"]
+      },
+      "ReportStatus": {
+        "type": "string",
+        "enum": ["OPEN", "IN_REVIEW", "ACTION_TAKEN", "DISMISSED"]
+      },
+      "ReportCreatedDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReportStatus"
+              }
+            ]
+          }
+        },
+        "required": ["id", "status"]
+      },
+      "ReportCreatedResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReportCreatedDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "VerificationStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["NONE", "PENDING", "APPROVED", "REJECTED"]
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "Profil doğrulanmış (rozet)"
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Moderatör doğrulama istedi; yapılana kadar keşfette görünmezsin"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true,
+            "description": "Ret gerekçesi"
+          }
+        },
+        "required": ["status", "verified", "required"]
+      },
+      "VerificationStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/VerificationStatusDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "CreateSelfieUploadDto": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": ["image/jpeg", "image/png", "image/webp"]
+          },
+          "sizeBytes": {
+            "type": "number"
+          }
+        },
+        "required": ["contentType", "sizeBytes"]
+      },
+      "SelfieUploadDto": {
+        "type": "object",
+        "properties": {
+          "verificationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uploadUrl": {
+            "type": "string"
+          },
+          "uploadHeaders": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["verificationId", "uploadUrl", "uploadHeaders"]
+      },
+      "SelfieUploadResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SelfieUploadDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "AdminLoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "totp": {
+            "type": "string",
+            "example": "123456"
+          }
+        },
+        "required": ["email", "password", "totp"]
+      },
+      "AdminRole": {
+        "type": "string",
+        "enum": ["MODERATOR", "SUPPORT", "ADMIN", "SUPER_ADMIN"]
+      },
+      "AdminIdentityDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminRole"
+              }
+            ]
+          }
+        },
+        "required": ["id", "email", "role"]
+      },
+      "AdminLoginDataDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "admin": {
+            "$ref": "#/components/schemas/AdminIdentityDto"
+          }
+        },
+        "required": ["token", "expiresAt", "admin"]
+      },
+      "AdminLoginResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminLoginDataDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "AdminMeResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminIdentityDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "ReportSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReportReason"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReportStatus"
+              }
+            ]
+          },
+          "targetType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReportTargetType"
+              }
+            ]
+          },
+          "priority": {
+            "type": "number"
+          },
+          "reportedUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reportedName": {
+            "type": "string",
+            "nullable": true
+          },
+          "openReportsAgainst": {
+            "type": "number",
+            "description": "Bu kişi hakkındaki açık şikayet sayısı"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "reason",
+          "status",
+          "targetType",
+          "priority",
+          "reportedUserId",
+          "reportedName",
+          "openReportsAgainst",
+          "createdAt"
+        ]
+      },
+      "ReportsResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportSummaryDto"
+            }
+          }
+        },
+        "required": ["data"]
+      },
+      "ReportDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReportReason"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReportStatus"
+              }
+            ]
+          },
+          "targetType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReportTargetType"
+              }
+            ]
+          },
+          "priority": {
+            "type": "number"
+          },
+          "reportedUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reportedName": {
+            "type": "string",
+            "nullable": true
+          },
+          "openReportsAgainst": {
+            "type": "number",
+            "description": "Bu kişi hakkındaki açık şikayet sayısı"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "comment": {
+            "type": "string",
+            "nullable": true
+          },
+          "reporterId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Şikayet anındaki kanıt"
+          },
+          "evidencePhotoUrls": {
+            "description": "Kanıt fotoğrafları (10 dk geçerli adresler)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resolutionNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "handledBy": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "reason",
+          "status",
+          "targetType",
+          "priority",
+          "reportedUserId",
+          "reportedName",
+          "openReportsAgainst",
+          "createdAt",
+          "comment",
+          "reporterId",
+          "evidence",
+          "evidencePhotoUrls",
+          "resolutionNote",
+          "resolvedAt",
+          "handledBy"
+        ]
+      },
+      "ReportDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReportDetailDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "UpdateReportDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["IN_REVIEW", "ACTION_TAKEN", "DISMISSED"]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": ["status"]
+      },
+      "ReviewPhotoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhotoStatus"
+              }
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "userId", "status", "url", "labels", "createdAt"]
+      },
+      "ReviewPhotosResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewPhotoDto"
+            }
+          }
+        },
+        "required": ["data"]
+      },
+      "DecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": ["APPROVED", "REJECTED"]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Selfie reddinde kullanıcıya gösterilir"
+          }
+        },
+        "required": ["decision"]
+      },
+      "VerificationReviewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "selfieUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "profilePhotoUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["id", "userId", "displayName", "submittedAt", "selfieUrl", "profilePhotoUrls"]
+      },
+      "VerificationsResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationReviewDto"
+            }
+          }
+        },
+        "required": ["data"]
+      },
+      "AdminUserPhotoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhotoStatus"
+              }
+            ]
+          },
+          "url": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": ["id", "status", "url"]
+      },
+      "AdminUserReportDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReportReason"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReportStatus"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "reason", "status", "createdAt"]
+      },
+      "AdminUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "suspendedUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "age": {
+            "type": "number",
+            "nullable": true
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "verificationRequired": {
+            "type": "boolean"
+          },
+          "moderationHold": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastActiveAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserPhotoDto"
+            }
+          },
+          "reportsAgainst": {
+            "description": "Bu kişi hakkındaki şikayetler",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserReportDto"
+            }
+          },
+          "reportsFiled": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "suspendedUntil",
+          "displayName",
+          "age",
+          "bio",
+          "verified",
+          "verificationRequired",
+          "moderationHold",
+          "createdAt",
+          "lastActiveAt",
+          "photos",
+          "reportsAgainst",
+          "reportsFiled"
+        ]
+      },
+      "AdminUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminUserDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "UserAction": {
+        "type": "string",
+        "enum": ["SUSPEND", "BAN", "RESTORE", "REQUIRE_VERIFICATION", "HOLD", "RELEASE_HOLD"]
+      },
+      "UserActionDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserAction"
+              }
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 500,
+            "description": "Denetim kaydına yazılır"
+          },
+          "days": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 365,
+            "description": "SUSPEND için gün"
+          }
+        },
+        "required": ["action", "reason"]
+      },
+      "AuditLogDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "adminEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "action": {
+            "type": "string"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "adminEmail",
+          "action",
+          "targetType",
+          "targetId",
+          "metadata",
+          "createdAt"
+        ]
+      },
+      "AuditLogsResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditLogDto"
             }
           }
         },

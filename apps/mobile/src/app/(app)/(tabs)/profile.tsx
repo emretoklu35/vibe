@@ -2,10 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 
 import { requestAccountDeletion } from '@/api/account';
 import { listSessions, revokeSession } from '@/api/auth';
+import { ApiError } from '@/api/client';
+import { getDataExport, getVerification, requestDataExport } from '@/api/safety';
 import { Button } from '@/design/components/button';
 import { Notice } from '@/design/components/notice';
 import { Screen } from '@/design/components/screen';
@@ -13,10 +15,12 @@ import { Text } from '@/design/components/text';
 import { useTheme } from '@/design/theme';
 import { describeUserAgent, formatDate, formatDateTime } from '@/features/account/format';
 import { describeError } from '@/features/auth/error-message';
+import { VerifiedBadge } from '@/features/discovery/profile-card';
 import { NotificationSettingsSection } from '@/features/notifications/notification-settings';
 import { usePhotos } from '@/features/photos/photo-manager';
 import { labelOf, RELATIONSHIP_GOAL_OPTIONS } from '@/features/profile/labels';
 import { useMyProfile } from '@/features/profile/queries';
+import { dataExportKey, verificationKey } from '@/features/safety/query-keys';
 import { clearLocalSession, signOut } from '@/features/session/session';
 import { useMe } from '@/features/session/use-me';
 
@@ -47,10 +51,13 @@ export default function ProfileTabScreen() {
           <Row label="Üyelik" value={me.data ? formatDate(me.data.createdAt) : '—'} />
         </Section>
 
+        <VerificationSection />
+
         <Section title="Bildirimler">
           <NotificationSettingsSection />
         </Section>
 
+        <DataExportSection />
         <SessionsSection />
         <DangerZone />
       </ScrollView>
@@ -110,6 +117,103 @@ function ProfileCard({ age }: { age: number | null }) {
         label="Keşfet tercihleri"
         variant="ghost"
         onPress={() => router.push('/preferences')}
+      />
+    </Section>
+  );
+}
+
+const VERIFICATION_TEXT = {
+  NONE: 'Selfie ile profilini doğrula; doğrulanmış profiller daha çok güven verir.',
+  PENDING: "Selfie'n inceleniyor.",
+  REJECTED: 'Önceki selfie onaylanmadı. Tekrar deneyebilirsin.',
+  APPROVED: 'Profilin doğrulandı.',
+} as const;
+
+function VerificationSection() {
+  const verification = useQuery({ queryKey: verificationKey, queryFn: getVerification });
+  const data = verification.data;
+  return (
+    <Section title="Doğrulama">
+      {verification.isError ? <Notice message={describeError(verification.error)} /> : null}
+      {data ? (
+        <View style={styles.inline}>
+          {data.verified ? <VerifiedBadge size={22} /> : null}
+          <Text style={styles.flex}>
+            {data.verified ? VERIFICATION_TEXT.APPROVED : VERIFICATION_TEXT[data.status]}
+          </Text>
+        </View>
+      ) : null}
+      {data && !data.verified ? (
+        <Button
+          label={data.status === 'PENDING' ? 'Durumu gör' : 'Profilini doğrula'}
+          variant="secondary"
+          onPress={() => router.push('/verification')}
+        />
+      ) : null}
+    </Section>
+  );
+}
+
+function DataExportSection() {
+  const queryClient = useQueryClient();
+  const exportStatus = useQuery({
+    queryKey: dataExportKey,
+    queryFn: getDataExport,
+    // Hazırlanırken birkaç saniyede bir yoklanır; hazır olunca durur.
+    refetchInterval: (query) =>
+      query.state.data?.status === 'REQUESTED' || query.state.data?.status === 'PROCESSING'
+        ? 4000
+        : false,
+  });
+  const request = useMutation({
+    mutationFn: requestDataExport,
+    onSuccess: (data) => queryClient.setQueryData(dataExportKey, data),
+  });
+  // İndirme adresi kısa ömürlü; açmadan hemen önce yenisi alınır.
+  const download = useMutation({
+    mutationFn: async () => {
+      const latest = await getDataExport();
+      if (!latest?.downloadUrl) {
+        throw new ApiError(410, 'EXPORT_EXPIRED', 'Dosyanın süresi dolmuş, yeniden hazırla.');
+      }
+      await Linking.openURL(latest.downloadUrl);
+    },
+  });
+
+  const data = exportStatus.data;
+  const preparing = data?.status === 'REQUESTED' || data?.status === 'PROCESSING';
+  const ready = data?.status === 'COMPLETED' && Boolean(data.downloadUrl);
+
+  return (
+    <Section title="Verilerin">
+      <Text variant="body" color="textMuted">
+        Profilin, fotoğrafların, tercihlerin, beğenilerin, gönderdiğin mesajlar ve onay kayıtların
+        tek bir dosyada (JSON) hazırlanır. Dosya 7 gün saklanır.
+      </Text>
+      {preparing ? <Notice tone="info" message="Dosyan hazırlanıyor…" /> : null}
+      {data?.status === 'FAILED' ? (
+        <Notice message="Dosya hazırlanamadı. Tekrar deneyebilirsin." />
+      ) : null}
+      {ready && data?.expiresAt ? (
+        <Text variant="caption" color="textMuted">
+          Hazır · {formatDateTime(data.expiresAt)} tarihine kadar indirilebilir
+        </Text>
+      ) : null}
+      {request.isError ? <Notice message={describeError(request.error)} /> : null}
+      {download.isError ? <Notice message={describeError(download.error)} /> : null}
+      {ready ? (
+        <Button
+          label="Dosyayı indir"
+          loading={download.isPending}
+          onPress={() => download.mutate()}
+        />
+      ) : null}
+      <Button
+        label={ready ? 'Yeniden hazırla' : 'Verilerimi indir'}
+        variant={ready ? 'ghost' : 'secondary'}
+        disabled={preparing}
+        loading={request.isPending}
+        onPress={() => request.mutate()}
       />
     </Section>
   );
@@ -227,6 +331,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, gap: 2 },
+  inline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   profileRow: { flexDirection: 'row', gap: 16, alignItems: 'center' },
   avatar: { width: 84, height: 105, overflow: 'hidden' },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

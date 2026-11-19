@@ -18,6 +18,7 @@ const message = (id: string, body = id): ChatMessage => ({
   type: 'TEXT',
   body,
   createdAt: new Date().toISOString(),
+  flagged: false,
   deletedAt: null,
 });
 

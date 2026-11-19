@@ -2,6 +2,7 @@ import type { ProfileCardDto } from '@vibe/api-contract';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Text } from '@/design/components/text';
 import { useTheme } from '@/design/theme';
@@ -66,14 +67,31 @@ export function CardHero({ card }: { card: ProfileCardDto }) {
         style={[styles.caption, { backgroundColor: theme.colors.overlay }]}
         pointerEvents="none"
       >
-        <Text variant="title" color="onOverlay">
-          {card.displayName}, {card.age}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text variant="title" color="onOverlay">
+            {card.displayName}, {card.age}
+          </Text>
+          {card.verified ? <VerifiedBadge size={22} /> : null}
+        </View>
         <Text variant="label" color="onOverlay">
           {[card.cityName, card.distanceLabel].filter(Boolean).join(' · ')}
         </Text>
       </View>
     </View>
+  );
+}
+
+/** Selfie doğrulaması onaylanmış profil rozeti. */
+export function VerifiedBadge({ size = 18 }: { size?: number }) {
+  const theme = useTheme();
+  return (
+    <Ionicons
+      name="checkmark-circle"
+      size={size}
+      color={theme.colors.success}
+      accessibilityLabel="Doğrulanmış profil"
+      accessibilityRole="image"
+    />
   );
 }
 
@@ -155,6 +173,7 @@ const styles = StyleSheet.create({
   bar: { flex: 1, height: 3, borderRadius: 2 },
   tapZone: { position: 'absolute', top: 0, bottom: 90, width: '40%' },
   caption: { padding: 16, gap: 2 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   box: { padding: 16, gap: 6 },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },

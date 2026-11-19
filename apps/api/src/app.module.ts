@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+
+import { AccessLogInterceptor } from './common/access-log/access-log.interceptor.js';
 
 import { LoggingModule } from './common/logging/logging.module.js';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module.js';
@@ -8,6 +11,7 @@ import { PrismaModule } from './infra/prisma/prisma.module.js';
 import { QueueModule } from './infra/queue/queue.module.js';
 import { StorageModule } from './infra/storage/storage.module.js';
 import { RedisModule } from './infra/redis/redis.module.js';
+import { AdminModule } from './modules/admin/admin.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { ChatModule } from './modules/chat/chat.module.js';
 import { DiscoveryModule } from './modules/discovery/discovery.module.js';
@@ -45,7 +49,9 @@ import { UsersModule } from './modules/users/users.module.js';
     SafetyModule,
     ChatModule,
     NotificationsModule,
+    AdminModule,
     HealthModule,
   ],
+  providers: [{ provide: APP_INTERCEPTOR, useClass: AccessLogInterceptor }],
 })
 export class AppModule {}

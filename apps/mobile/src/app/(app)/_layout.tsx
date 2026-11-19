@@ -51,6 +51,8 @@ export default function AppLayout() {
       <Stack.Screen name="photos" />
       <Stack.Screen name="preferences" />
       <Stack.Screen name="blocked" />
+      <Stack.Screen name="report" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="verification" />
     </Stack>
   );
 }

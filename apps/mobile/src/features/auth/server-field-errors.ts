@@ -16,16 +16,20 @@ export function applyServerFieldErrors<T extends FieldValues>(
 ): boolean {
   if (
     !(error instanceof ApiError) ||
-    error.code !== 'VALIDATION_FAILED' ||
+    !(error.code === 'VALIDATION_FAILED' || error.code === 'CONTACT_INFO_NOT_ALLOWED') ||
     !Array.isArray(error.details)
   ) {
     return false;
   }
+  const contactInfo = error.code === 'CONTACT_INFO_NOT_ALLOWED';
   let matched = false;
   for (const item of error.details as FieldError[]) {
     const field = fields.find((f) => f === item.field);
     if (field) {
-      setError(field, { type: 'server', message: fieldMessage(item.field) });
+      setError(field, {
+        type: 'server',
+        message: contactInfo ? CONTACT_INFO_MESSAGE : fieldMessage(item.field),
+      });
       matched = true;
     }
   }
@@ -41,5 +45,9 @@ const FIELD_MESSAGES: Record<string, string> = {
   minAge: 'Yaş aralığını kontrol et',
   maxAge: 'Yaş aralığını kontrol et',
 };
+
+/** Güvenlik kuralı: iletişim bilgisi yalnızca eşleşme sonrası, kişinin kendi isteğiyle paylaşılır. */
+const CONTACT_INFO_MESSAGE =
+  'Telefon, e-posta, bağlantı veya sosyal medya hesabı yazamazsın. Bunları eşleştiğin kişiyle sohbette paylaşabilirsin.';
 
 const fieldMessage = (field: string) => FIELD_MESSAGES[field] ?? 'Bu alanı kontrol et';

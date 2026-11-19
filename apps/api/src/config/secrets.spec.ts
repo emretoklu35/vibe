@@ -15,6 +15,7 @@ const base = {
   PHONE_HMAC_KEY: realKey(32),
   PHONE_ENCRYPTION_KEY: realKey(32),
   JWT_ACCESS_SECRET: realKey(48),
+  JWT_ADMIN_SECRET: realKey(48),
 };
 
 describe('gizli anahtar doğrulaması', () => {

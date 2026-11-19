@@ -6,6 +6,9 @@ export type ProcessPhotoJob = { photoId: string };
 export const MAINTENANCE_QUEUE = 'maintenance';
 export const PURGE_DELETED_ACCOUNTS = 'purge-deleted-accounts';
 export const CLEANUP_STALE_UPLOADS = 'cleanup-stale-uploads';
+export const RUN_RETENTION = 'run-retention';
+export const BUILD_EXPORT = 'build-export';
+export type BuildExportJob = { requestId: string };
 
 export const NOTIFICATIONS_QUEUE = 'notifications';
 export const SEND_PUSH = 'send-push';

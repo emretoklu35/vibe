@@ -80,6 +80,15 @@ const REQUIREMENT_TEXT: Record<
     action: 'Keşfet tercihleri',
     route: '/preferences',
   },
+  VERIFICATION: {
+    title: 'Güvenlik ekibimiz senden profilini doğrulamanı istedi. Kısa bir selfie çekmen yeterli.',
+    action: 'Profilini doğrula',
+    route: '/verification',
+  },
+  UNDER_REVIEW: {
+    title:
+      'Hesabın şu anda güvenlik incelemesinde. İnceleme bitene kadar keşfette görünmezsin; eşleşmelerinle sohbet etmeye devam edebilirsin.',
+  },
   VISIBLE: {
     title: 'Profilin keşfette gizli. Görünür yaparsan keşfet açılır.',
     action: 'Profili düzenle',
@@ -300,7 +309,19 @@ function CandidateDeck() {
             <Button label="Vazgeç" variant="ghost" onPress={() => setConfirmBlock(false)} />
           </View>
         ) : (
-          <Button label="Bu kişiyi engelle" variant="ghost" onPress={() => setConfirmBlock(true)} />
+          <View style={{ gap: theme.spacing.xs }}>
+            <Button
+              label="Şikayet et"
+              variant="ghost"
+              onPress={() =>
+                router.push({
+                  pathname: '/report',
+                  params: { userId: current.userId, name: current.displayName },
+                })
+              }
+            />
+            <Button label="Engelle" variant="ghost" onPress={() => setConfirmBlock(true)} />
+          </View>
         )}
       </ScrollView>
       {error ? <Notice message={describeError(error)} /> : null}

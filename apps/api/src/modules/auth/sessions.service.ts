@@ -15,7 +15,7 @@ export type TokenPair = {
   refreshTokenExpiresAt: Date;
 };
 
-export type SessionClient = { deviceId?: string; userAgent?: string };
+export type SessionClient = { deviceId?: string; userAgent?: string; ip?: string; port?: number };
 
 export type RevokeReason =
   'logout' | 'revoked_by_user' | 'reuse_detected' | 'account_deletion' | 'underage';

@@ -37,6 +37,9 @@ export class MatchUserDto {
   @ApiProperty()
   displayName!: string;
 
+  @ApiProperty({ description: 'Selfie doğrulaması onaylı' })
+  verified!: boolean;
+
   @ApiProperty()
   age!: number;
 

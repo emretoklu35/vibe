@@ -14,6 +14,7 @@ function service(hmacSeed = 1, encSeed = 2) {
     PHONE_HMAC_KEY: key(hmacSeed),
     PHONE_ENCRYPTION_KEY: key(encSeed),
     JWT_ACCESS_SECRET: key(3),
+    JWT_ADMIN_SECRET: key(4),
   });
   return new PhoneCryptoService(config);
 }

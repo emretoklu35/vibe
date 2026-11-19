@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 
 import { AppException } from '../../common/errors/app.exception.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
+import { recordAccess } from '../../common/access-log/access-log.interceptor.js';
 import { PhoneCryptoService } from '../../infra/crypto/phone-crypto.service.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
@@ -66,6 +67,12 @@ export class AuthService {
     }
 
     const tokens = await this.sessions.create(user.id, client);
+    await recordAccess(this.prisma, {
+      userId: user.id,
+      ip: client.ip,
+      port: client.port,
+      action: 'auth.login',
+    });
     await this.prisma.user.update({ where: { id: user.id }, data: { lastActiveAt: new Date() } });
 
     return {

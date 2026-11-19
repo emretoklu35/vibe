@@ -8,6 +8,7 @@ import { StorageService } from '../../infra/storage/storage.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { RealtimeEvent } from '../realtime/realtime.events.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
+import { detectContactInfo } from '../safety/text/contact-info.js';
 import { ageOn, toCalendarDate, todayInTurkey } from '../users/age.js';
 import { decodeCursor, encodeCursor } from './cursor.js';
 import type { ConversationDto, MessageDto } from './dto/chat.dto.js';
@@ -21,6 +22,7 @@ type MessageRow = {
   senderId: string | null;
   type: 'TEXT' | 'SYSTEM';
   body: string;
+  flagged: boolean;
   createdAt: Date;
   deletedAt: Date | null;
 };
@@ -213,7 +215,14 @@ export class ChatService {
     try {
       message = await this.prisma.$transaction(async (tx) => {
         const created = await tx.message.create({
-          data: { id: input.id, conversationId, senderId: userId, type: 'TEXT', body },
+          data: {
+            id: input.id,
+            conversationId,
+            senderId: userId,
+            type: 'TEXT',
+            body,
+            flagged: detectContactInfo(body).length > 0,
+          },
         });
         await tx.conversation.update({
           where: { id: conversationId },
@@ -322,7 +331,7 @@ export class ChatService {
     const [lastMessages, users] = await Promise.all([
       this.prisma.$queryRaw<MessageRow[]>`
         SELECT DISTINCT ON ("conversationId")
-          "id", "conversationId", "senderId", "type"::text AS "type", "body", "createdAt", "deletedAt"
+          "id", "conversationId", "senderId", "type"::text AS "type", "body", "flagged", "createdAt", "deletedAt"
         FROM "Message"
         WHERE "conversationId" = ANY(${ids}::uuid[])
         ORDER BY "conversationId", "createdAt" DESC, "id" DESC`,
@@ -331,6 +340,7 @@ export class ChatService {
         select: {
           id: true,
           birthDate: true,
+          verifiedAt: true,
           profile: { select: { displayName: true } },
           photos: {
             where: { status: 'APPROVED' },
@@ -354,6 +364,7 @@ export class ChatService {
           otherUser: {
             userId: row.otherUserId,
             displayName: user?.profile?.displayName ?? '',
+            verified: Boolean(user?.verifiedAt),
             age: user?.birthDate ? ageOn(toCalendarDate(user.birthDate), today) : 0,
             photoUrl: photo ? await this.storage.presignDownload(photo.storageKey, 600) : null,
           },

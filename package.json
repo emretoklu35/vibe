@@ -15,6 +15,8 @@
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "api:dev": "npm run dev --workspace @vibe/api",
     "mobile:start": "npm run start --workspace @vibe/mobile",
+    "admin:dev": "npm run dev --workspace @vibe/admin",
+    "admin:create": "npm run admin:create --workspace @vibe/api --",
     "db:migrate": "npm run db:migrate --workspace @vibe/api",
     "db:seed": "npm run db:seed --workspace @vibe/api",
     "lint": "npm run lint --workspaces --if-present",

@@ -9,6 +9,8 @@ import { MediaProcessor } from './jobs/media.processor.js';
 import { NotificationsProcessor } from './jobs/notifications.processor.js';
 import { PushDeliveryModule } from './modules/notifications/push/push-delivery.module.js';
 import { MediaProcessingModule } from './modules/media/media-processing.module.js';
+import { DataExportService } from './modules/privacy/data-export.service.js';
+import { RetentionService } from './modules/privacy/retention.service.js';
 import { AccountDeletionService } from './modules/users/account-deletion.service.js';
 
 /** Arka plan işleri süreci: HTTP sunmaz, yalnızca kuyrukları işler. */
@@ -21,6 +23,13 @@ import { AccountDeletionService } from './modules/users/account-deletion.service
     MediaProcessingModule,
     PushDeliveryModule,
   ],
-  providers: [AccountDeletionService, MaintenanceProcessor, MediaProcessor, NotificationsProcessor],
+  providers: [
+    AccountDeletionService,
+    DataExportService,
+    RetentionService,
+    MaintenanceProcessor,
+    MediaProcessor,
+    NotificationsProcessor,
+  ],
 })
 export class WorkerModule {}

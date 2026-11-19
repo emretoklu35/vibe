@@ -4,10 +4,11 @@ import { Redis } from 'ioredis';
 
 import { APP_CONFIG } from '../../config/config.module.js';
 import type { AppConfig } from '../../config/env.js';
-import { MEDIA_QUEUE, NOTIFICATIONS_QUEUE } from './queues.js';
+import { MAINTENANCE_QUEUE, MEDIA_QUEUE, NOTIFICATIONS_QUEUE } from './queues.js';
 
 export const MEDIA_QUEUE_TOKEN = Symbol('MEDIA_QUEUE');
 export const NOTIFICATIONS_QUEUE_TOKEN = Symbol('NOTIFICATIONS_QUEUE');
+export const MAINTENANCE_QUEUE_TOKEN = Symbol('MAINTENANCE_QUEUE');
 const QUEUE_CONNECTION = Symbol('QUEUE_CONNECTION');
 
 const defaultJobOptions = {
@@ -39,18 +40,25 @@ const defaultJobOptions = {
       useFactory: (connection: Redis) =>
         new Queue(NOTIFICATIONS_QUEUE, { connection, defaultJobOptions }),
     },
+    {
+      provide: MAINTENANCE_QUEUE_TOKEN,
+      inject: [QUEUE_CONNECTION],
+      useFactory: (connection: Redis) =>
+        new Queue(MAINTENANCE_QUEUE, { connection, defaultJobOptions }),
+    },
   ],
-  exports: [MEDIA_QUEUE_TOKEN, NOTIFICATIONS_QUEUE_TOKEN],
+  exports: [MEDIA_QUEUE_TOKEN, NOTIFICATIONS_QUEUE_TOKEN, MAINTENANCE_QUEUE_TOKEN],
 })
 export class QueueModule implements OnModuleDestroy {
   constructor(
     @Inject(MEDIA_QUEUE_TOKEN) private readonly media: Queue,
     @Inject(NOTIFICATIONS_QUEUE_TOKEN) private readonly notifications: Queue,
+    @Inject(MAINTENANCE_QUEUE_TOKEN) private readonly maintenance: Queue,
     @Inject(QUEUE_CONNECTION) private readonly connection: Redis,
   ) {}
 
   async onModuleDestroy(): Promise<void> {
-    await Promise.all([this.media.close(), this.notifications.close()]);
+    await Promise.all([this.media.close(), this.notifications.close(), this.maintenance.close()]);
     await this.connection.quit().catch(() => this.connection.disconnect());
   }
 }

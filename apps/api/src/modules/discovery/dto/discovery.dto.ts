@@ -17,6 +17,10 @@ export const DiscoveryRequirement = {
   ORIENTATION_CONSENT: 'ORIENTATION_CONSENT',
   SEEKING_GENDERS: 'SEEKING_GENDERS',
   VISIBLE: 'VISIBLE',
+  /** Moderatör selfie doğrulaması istedi (K11) */
+  VERIFICATION: 'VERIFICATION',
+  /** Hesap inceleme altında */
+  UNDER_REVIEW: 'UNDER_REVIEW',
 } as const;
 export type DiscoveryRequirement = (typeof DiscoveryRequirement)[keyof typeof DiscoveryRequirement];
 
@@ -87,6 +91,9 @@ export class ProfileCardDto {
 
   @ApiProperty({ enum: Gender, enumName: 'Gender' })
   gender!: Gender;
+
+  @ApiProperty({ description: 'Selfie doğrulaması onaylı (rozet)' })
+  verified!: boolean;
 
   @ApiProperty({ type: String, nullable: true })
   cityName!: string | null;

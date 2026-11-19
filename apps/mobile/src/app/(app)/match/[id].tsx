@@ -58,8 +58,7 @@ export default function MatchScreen() {
         <Button label="‹ Geri" variant="ghost" onPress={() => router.back()} />
         <CardHero card={profile} />
         <Text variant="caption" color="textMuted">
-          {formatDate(matchedAt)} tarihinde eşleştiniz. Mesajlaşma bir sonraki güncellemeyle
-          gelecek.
+          {formatDate(matchedAt)} tarihinde eşleştiniz.
         </Text>
         <CardDetails card={profile} />
 
@@ -87,6 +86,16 @@ export default function MatchScreen() {
               label="Eşleşmeyi bitir"
               variant="secondary"
               onPress={() => setConfirm('unmatch')}
+            />
+            <Button
+              label="Şikayet et"
+              variant="ghost"
+              onPress={() =>
+                router.push({
+                  pathname: '/report',
+                  params: { userId: profile.userId, name: profile.displayName },
+                })
+              }
             />
             <Button label="Engelle" variant="ghost" onPress={() => setConfirm('block')} />
           </View>

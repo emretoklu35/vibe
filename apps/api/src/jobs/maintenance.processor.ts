@@ -11,11 +11,16 @@ import { Redis } from 'ioredis';
 import { APP_CONFIG } from '../config/config.module.js';
 import type { AppConfig } from '../config/env.js';
 import {
+  BUILD_EXPORT,
+  type BuildExportJob,
   CLEANUP_STALE_UPLOADS,
+  RUN_RETENTION,
   MAINTENANCE_QUEUE,
   PURGE_DELETED_ACCOUNTS,
 } from '../infra/queue/queues.js';
 import { PhotoProcessingService } from '../modules/media/photo-processing.service.js';
+import { DataExportService } from '../modules/privacy/data-export.service.js';
+import { RetentionService } from '../modules/privacy/retention.service.js';
 import { AccountDeletionService } from '../modules/users/account-deletion.service.js';
 
 const PURGE_EVERY_MS = 15 * 60 * 1000;
@@ -36,6 +41,8 @@ export class MaintenanceProcessor implements OnApplicationBootstrap, OnModuleDes
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly deletion: AccountDeletionService,
     private readonly photos: PhotoProcessingService,
+    private readonly exports: DataExportService,
+    private readonly retention: RetentionService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -65,6 +72,12 @@ export class MaintenanceProcessor implements OnApplicationBootstrap, OnModuleDes
       },
     );
 
+    await this.queue.upsertJobScheduler(
+      RUN_RETENTION,
+      { every: 24 * 60 * 60 * 1000 },
+      { name: RUN_RETENTION, opts: { attempts: 3, removeOnComplete: 30, removeOnFail: 100 } },
+    );
+
     this.worker = new Worker(MAINTENANCE_QUEUE, (job) => this.process(job), {
       connection: this.connection,
       concurrency: 1,
@@ -82,6 +95,10 @@ export class MaintenanceProcessor implements OnApplicationBootstrap, OnModuleDes
         return this.deletion.purgeDue();
       case CLEANUP_STALE_UPLOADS:
         return this.photos.cleanupStaleUploads();
+      case RUN_RETENTION:
+        return this.retention.run();
+      case BUILD_EXPORT:
+        return this.exports.build((job.data as BuildExportJob).requestId);
       default:
         throw new Error(`Bilinmeyen iş: ${job.name}`);
     }

@@ -93,7 +93,9 @@ export const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });
 
 export async function resetDatabase(app: NestExpressApplication): Promise<void> {
   const prisma = app.get(PrismaService);
-  await prisma.$executeRawUnsafe('TRUNCATE "User", "DataRequest" CASCADE');
+  await prisma.$executeRawUnsafe(
+    'TRUNCATE "User", "DataRequest", "AdminUser", "AuditLog", "AccessLog" CASCADE',
+  );
   // Test bucket'ındaki kullanıcı medyası da temizlenir.
   await app.get(StorageService).removePrefix('users/');
 }

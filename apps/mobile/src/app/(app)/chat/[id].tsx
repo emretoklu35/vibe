@@ -23,6 +23,7 @@ import { Screen } from '@/design/components/screen';
 import { Text } from '@/design/components/text';
 import { useTheme } from '@/design/theme';
 import { describeError } from '@/features/auth/error-message';
+import { VerifiedBadge } from '@/features/discovery/profile-card';
 import {
   type ChatMessage,
   conversationKey,
@@ -122,8 +123,19 @@ function Chat({ conversationId }: { conversationId: string }) {
       body,
       createdAt: new Date().toISOString(),
       deletedAt: null,
+      flagged: false,
     });
   };
+
+  const report = (userId: string, name: string, messageId?: string) =>
+    router.push({
+      pathname: '/report',
+      params: {
+        userId,
+        name,
+        ...(messageId ? { targetType: 'MESSAGE', targetId: messageId } : {}),
+      },
+    });
 
   // "Görüldü": karşı tarafın okuduğu, benim gönderdiğim en yeni mesaj.
   const otherReadAt = conversation.data?.otherLastReadAt
@@ -170,6 +182,15 @@ function Chat({ conversationId }: { conversationId: string }) {
             ) : null}
           </View>
           <Text variant="headline">{other ? `${other.displayName}, ${other.age}` : ''}</Text>
+          {other?.verified ? <VerifiedBadge /> : null}
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Şikayet et"
+          hitSlop={10}
+          onPress={() => other && report(other.userId, other.displayName)}
+        >
+          <Ionicons name="flag-outline" size={22} color={theme.colors.textMuted} />
         </Pressable>
       </View>
 
@@ -188,6 +209,11 @@ function Chat({ conversationId }: { conversationId: string }) {
               mine={item.senderId === myId}
               seen={item.id === seenId}
               onRetry={() => send.mutate({ ...item, localStatus: undefined })}
+              onReport={
+                other && item.senderId === other.userId && !item.deletedAt
+                  ? () => report(other.userId, other.displayName, item.id)
+                  : undefined
+              }
             />
           )}
           ListEmptyComponent={
@@ -258,11 +284,14 @@ function Bubble({
   mine,
   seen,
   onRetry,
+  onReport,
 }: {
   message: ChatMessage;
   mine: boolean;
   seen: boolean;
   onRetry: () => void;
+  /** Yalnızca karşı tarafın mesajlarında: uzun basınca şikayet ekranı açılır. */
+  onReport?: () => void;
 }) {
   const theme = useTheme();
   const deleted = Boolean(message.deletedAt);
@@ -277,7 +306,12 @@ function Bubble({
 
   return (
     <View style={{ alignItems: mine ? 'flex-end' : 'flex-start', gap: 2 }}>
-      <View
+      <Pressable
+        disabled={!onReport}
+        onLongPress={onReport}
+        accessibilityHint={onReport ? 'Mesajı şikayet etmek için uzun bas' : undefined}
+        accessibilityActions={onReport ? [{ name: 'longpress', label: 'Şikayet et' }] : undefined}
+        onAccessibilityAction={onReport}
         style={[
           styles.bubble,
           {
@@ -293,7 +327,22 @@ function Bubble({
         >
           {deleted ? 'Bu mesaj silindi' : (message as MessageDto).body}
         </Text>
-      </View>
+      </Pressable>
+      {!mine && message.flagged && !deleted ? (
+        <View
+          style={[
+            styles.warning,
+            { borderColor: theme.colors.border, borderRadius: theme.radii.md },
+          ]}
+          accessibilityRole="alert"
+        >
+          <Ionicons name="shield-checkmark-outline" size={16} color={theme.colors.accent} />
+          <Text variant="caption" color="textMuted" style={styles.flex}>
+            Bu mesajda iletişim bilgisi veya bağlantı var. Tanımadığın bağlantılara dokunma, para
+            veya kişisel bilgi gönderme. Seni rahatsız ederse uzun basıp şikayet edebilirsin.
+          </Text>
+        </View>
+      ) : null}
       {message.localStatus === 'failed' ? (
         <Pressable accessibilityRole="button" onPress={onRetry}>
           <Text variant="caption" color="danger">
@@ -322,6 +371,13 @@ const styles = StyleSheet.create({
   headerUser: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   avatar: { width: 36, height: 36, borderRadius: 18, overflow: 'hidden' },
   bubble: { maxWidth: '80%', paddingHorizontal: 14, paddingVertical: 10 },
+  warning: {
+    maxWidth: '85%',
+    flexDirection: 'row',
+    gap: 8,
+    padding: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',

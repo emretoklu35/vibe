@@ -92,6 +92,15 @@ model User {
   messages                 Message[]
   userDevices              UserDevice[]
   notificationSettings     NotificationSettings?
+  reportsFiled             Report[]                  @relation("ReportReporter")
+  reportsAgainst           Report[]                  @relation("ReportReported")
+  verifications            Verification[]
+  /// Selfie doğrulaması onaylandı (profilde rozet)
+  verifiedAt               DateTime?
+  /// Moderatör doğrulama istedi: yapılana kadar keşfette gizli (K11)
+  verificationRequired     Boolean                   @default(false)
+  /// İnceleme bekleniyor (ör. reşit olmayan şikayeti): keşfette gizli, moderatör kaldırır
+  moderationHold           Boolean                   @default(false)
 
   @@index([status, lastActiveAt])
 }
@@ -142,6 +151,8 @@ model DataRequest {
   scheduledFor  DateTime?
   completedAt   DateTime?
   failureReason String?           @db.VarChar(256)
+  /// Dışa aktarma dosyasının nesne depolama anahtarı (7 gün indirilebilir)
+  resultKey     String?           @db.VarChar(200)
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
@@ -383,6 +394,8 @@ model Message {
   senderId       String?     @db.Uuid
   type           MessageType @default(TEXT)
   body           String      @db.VarChar(2000)
+  /// İletişim bilgisi / bağlantı içeriyor: alıcıya dolandırıcılık uyarısı gösterilir
+  flagged        Boolean     @default(false)
   createdAt      DateTime    @default(now())
   /// Gönderen sildi: metin boşaltılır, satır sıralama için kalır.
   deletedAt      DateTime?
@@ -422,4 +435,161 @@ model NotificationSettings {
   updatedAt  DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Faz 6: güvenlik, moderasyon, yönetim ─────────────────────
+
+enum ReportReason {
+  UNDERAGE
+  NUDITY_SEXUAL
+  HARASSMENT
+  HATE
+  SCAM_SPAM
+  FAKE_PROFILE
+  VIOLENCE_THREAT
+  OFFLINE_BEHAVIOR
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  ACTION_TAKEN
+  DISMISSED
+}
+
+enum ReportTargetType {
+  PROFILE
+  PHOTO
+  MESSAGE
+}
+
+enum AdminRole {
+  MODERATOR
+  SUPPORT
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Şikayet. Taraflardan biri hesabını silse de kanıt inceleme ve yasal süre boyunca korunur.
+model Report {
+  id               String           @id @default(uuid()) @db.Uuid
+  reporterId       String?          @db.Uuid
+  reportedUserId   String?          @db.Uuid
+  reason           ReportReason
+  targetType       ReportTargetType
+  /// Fotoğraf veya mesaj kimliği (PROFILE için boş)
+  targetId         String?          @db.Uuid
+  comment          String?          @db.VarChar(1000)
+  /// Şikayet anındaki kanıt (profil alanları, mesaj ve bağlamı, fotoğraf kopyalarının anahtarları)
+  evidence         Json
+  status           ReportStatus     @default(OPEN)
+  /// Yüksek = önce (UNDERAGE ve tehdit en üstte)
+  priority         Int
+  handledByAdminId String?          @db.Uuid
+  resolutionNote   String?          @db.VarChar(1000)
+  createdAt        DateTime         @default(now())
+  resolvedAt       DateTime?
+  /// Bu tarihten sonra kanıt (ve kopyalanan medya) silinir
+  evidencePurgeAt  DateTime?
+
+  reporter     User?      @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  reportedUser User?      @relation("ReportReported", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  handledBy    AdminUser? @relation(fields: [handledByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([status, priority(sort: Desc), createdAt])
+  @@index([reportedUserId, status])
+  @@index([reporterId, reportedUserId, status])
+  @@index([evidencePurgeAt])
+}
+
+model Verification {
+  id           String             @id @default(uuid()) @db.Uuid
+  userId       String             @db.Uuid
+  status       VerificationStatus @default(PENDING)
+  /// İşlenmiş selfie (EXIF temizlenmiş). Karardan 30 gün sonra silinir.
+  selfieKey    String?            @db.VarChar(200)
+  uploadKey    String?            @db.VarChar(200)
+  submittedAt  DateTime?
+  reviewedById String?            @db.Uuid
+  reviewedAt   DateTime?
+  note         String?            @db.VarChar(500)
+  createdAt    DateTime           @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy AdminUser? @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, submittedAt])
+  @@index([userId, createdAt])
+}
+
+model AdminUser {
+  id                  String    @id @default(uuid()) @db.Uuid
+  /// Küçük harfe çevrilmiş
+  email               String    @unique @db.VarChar(254)
+  /// argon2id (Node yerleşik crypto.argon2), "$argon2id$..." biçiminde
+  passwordHash        String
+  /// AES-256-GCM ile şifrelenmiş TOTP gizli anahtarı
+  totpSecretEncrypted Bytes
+  role                AdminRole @default(MODERATOR)
+  isActive            Boolean   @default(true)
+  failedLogins        Int       @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  createdAt           DateTime  @default(now())
+
+  sessions              AdminSession[]
+  auditLogs             AuditLog[]
+  reportsHandled        Report[]
+  verificationsReviewed Verification[]
+}
+
+model AdminSession {
+  id        String    @id @default(uuid()) @db.Uuid
+  adminId   String    @db.Uuid
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  ipAddress String?   @db.VarChar(64)
+
+  admin AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, revokedAt])
+}
+
+/// Yönetici işlemlerinin denetim kaydı. Yalnızca ekleme; hassas veri içermez.
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  adminId    String?  @db.Uuid
+  action     String   @db.VarChar(64)
+  targetType String   @db.VarChar(32)
+  targetId   String?  @db.VarChar(64)
+  metadata   Json?
+  ipAddress  String?  @db.VarChar(64)
+  createdAt  DateTime @default(now())
+
+  admin AdminUser? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([targetType, targetId])
+  @@index([adminId, createdAt])
+  @@index([createdAt])
+}
+
+/// 5651 trafik/erişim kaydı. FK yok: kullanıcı silinse de yasal süre boyunca kalır. Yalnızca ekleme.
+model AccessLog {
+  id        BigInt   @id @default(autoincrement())
+  userId    String?  @db.Uuid
+  ipAddress String   @db.VarChar(64)
+  port      Int?
+  action    String   @db.VarChar(96)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }

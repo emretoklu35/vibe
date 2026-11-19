@@ -41,7 +41,7 @@
         "expo-image-picker",
         {
           "photosPermission": "Profil fotoğrafı seçebilmen için fotoğraflarına erişim gerekiyor.",
-          "cameraPermission": false,
+          "cameraPermission": "Profilini doğrulamak üzere selfie çekebilmen için kameraya erişim gerekiyor.",
           "microphonePermission": false
         }
       ],

@@ -228,6 +228,7 @@ export class MatchingService {
       select: {
         id: true,
         birthDate: true,
+        verifiedAt: true,
         profile: { select: { displayName: true } },
         photos: {
           where: { status: 'APPROVED' },
@@ -249,6 +250,7 @@ export class MatchingService {
           user: {
             userId: otherId,
             displayName: user?.profile?.displayName ?? '',
+            verified: Boolean(user?.verifiedAt),
             age: user?.birthDate ? ageOn(toCalendarDate(user.birthDate), today) : 0,
             photoUrl: photo ? await this.storage.presignDownload(photo.storageKey, 600) : null,
           },

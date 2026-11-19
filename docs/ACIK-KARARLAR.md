@@ -15,6 +15,9 @@ Son güncelleme: 2026-11-19
 | K7  | Aranan cinsiyet (özel nitelikli veri) | **Ayrı açık rıza; rıza yoksa keşfet ve eşleşme kapalı** (Faz 3)                                               | Rıza vermeyen kullanıcı profil oluşturabilir. Rıza geri alınırsa tercih silinir, keşfet durur.                                                                                                                                   |
 | K8  | Fotoğraf denetimi                     | **Sağlayıcıdan bağımsız arayüz; geliştirmede otomatik onay** (Faz 3)                                          | Production, gerçek sağlayıcı bağlanmadan başlamaz. Sağlayıcı ve yurt dışı aktarım kararı Faz 6–7 öncesi (açık karar #12).                                                                                                        |
 | K9  | Yerel S3                              | **SeaweedFS** (Faz 3, teknik karar)                                                                           | MinIO topluluk imajları yayından kalktı. SeaweedFS imzalı Content-Type'ı zorlamıyor; sunucu yüklenen dosyayı zaten kendisi doğruluyor.                                                                                           |
+| K10 | Yönetim paneli (#13)                  | **Ayrı web uygulaması** (`apps/admin`, Faz 6)                                                                 | E-posta + argon2id parola + TOTP; rol bazlı yetki; tüm yazma işlemleri denetim kaydına.                                                                                                                                          |
+| K11 | Selfie doğrulama (#1)                 | **Rozet; gerektiğinde zorunlu** (Faz 6)                                                                       | İsteğe bağlı; moderatör şüpheli/şikayet edilen hesaptan isteyebilir, yapılana kadar keşfette gizlenir.                                                                                                                           |
+| K12 | Doğrulama sağlayıcısı (#14)           | **Arayüz + moderatör incelemesi** (Faz 6)                                                                     | Selfie profil fotoğraflarıyla insan tarafından karşılaştırılır; biyometrik veri üçüncü tarafa gitmez. Otomatik canlılık sağlayıcısı sonra aynı arayüze bağlanır.                                                                 |
 
 ## Brief'e eklenen değerlendirme notları → nereye işlendi
 
@@ -36,7 +39,7 @@ Faz 1 öncesi gerekli olanlar **kalın**.
 
 ### Ürün
 
-1. **Doğrulama zorunluluğu:** Selfie/canlılık doğrulaması mesajlaşma için zorunlu mu, yoksa yalnızca "doğrulanmış" rozeti mi? (Öneri: MVP'de rozet + şikayet alan hesaplar için zorunlu.)
+1. ~~Doğrulama zorunluluğu~~ → K11.
 2. ~~Cinsiyet seçenekleri ve aranan cinsiyet~~ → K6, K7.
 3. Günlük beğeni limiti var mı? (Premium'a hazırlık; MVP'de yalnızca spam limiti önerilir.)
 4. Geçilen (pass) profil ne kadar sonra yeniden gösterilsin? Faz 4'te öneri (30 gün) uygulandı; değiştirmek tek sabit (`PASS_TTL_DAYS`).
@@ -51,8 +54,8 @@ Faz 1 öncesi gerekli olanlar **kalın**.
 10. ~~Paket yöneticisi~~ → K5 ile karar verildi (npm workspaces).
 11. Push: FCM/APNs doğrudan mı (brief), Expo Push Service mi? (Öneri: doğrudan; daha az üçüncü taraf aktarımı.)
 12. Fotoğraf moderasyon sağlayıcısı (AWS Rekognition, Sightengine, Hive vb.) ve yurt dışı aktarım durumu.
-13. Admin paneli: ayrı web uygulaması (öneri, Faz 6) mı, yalnızca API + basit iç araç mı?
-14. Selfie/canlılık doğrulama sağlayıcısı.
+13. ~~Admin paneli~~ → K10.
+14. ~~Selfie doğrulama sağlayıcısı~~ → K12 (otomatik sağlayıcı ileride).
 
 ### Hukuki (avukat görüşü gerekli)
 

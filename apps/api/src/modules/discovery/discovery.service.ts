@@ -104,6 +104,8 @@ export class DiscoveryService {
       where: { id: viewerId },
       select: {
         birthDate: true,
+        verificationRequired: true,
+        moderationHold: true,
         profile: true,
         preference: true,
         interests: { select: { interest: { select: { id: true, labelTr: true } } } },
@@ -122,6 +124,8 @@ export class DiscoveryService {
       missing.push(DiscoveryRequirement.SEEKING_GENDERS);
     }
     if (profile && !profile.isDiscoverable) missing.push(DiscoveryRequirement.VISIBLE);
+    if (user.verificationRequired) missing.push(DiscoveryRequirement.VERIFICATION);
+    if (user.moderationHold) missing.push(DiscoveryRequirement.UNDER_REVIEW);
 
     if (!profile || !preference || !user.birthDate) return { missing };
     const today = todayInTurkey();
@@ -195,6 +199,7 @@ export class DiscoveryService {
           displayName: row.displayName,
           age: row.age,
           gender: row.gender,
+          verified: row.verified,
           cityName: row.cityName,
           distanceLabel: distanceLabel(distanceKm),
           bio: row.bio,

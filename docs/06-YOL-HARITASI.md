@@ -11,7 +11,7 @@ flowchart TD
   F2 --> F3[Faz 3\nProfil + medya + konum ✔]
   F3 --> F4[Faz 4\nKeşfet + eşleşme + engelleme ✔]
   F4 --> F5[Faz 5\nSohbet + push ✔]
-  F3 --> F6[Faz 6\nGüvenlik + moderasyon + admin]
+  F3 --> F6[Faz 6\nGüvenlik + moderasyon + admin ✔]
   F5 --> F6
   F6 --> F7[Faz 7\nLansman hazırlığı]
   F7 --> MVP((MVP yayını))
@@ -90,13 +90,17 @@ flowchart TD
 - **Testler:** API 84 birim + 122 e2e (gerçek Socket.IO istemcisiyle), mobil 29; canlı sohbet, okundu bilgisi ve çevrimdışı push web önizlemede uçtan uca denendi.
 - **Bilinen sınırlamalar:** Push yalnızca geliştirme derlemesi + FCM/APNs anahtarlarıyla çalışır; Expo Go ve web'de çalışmaz, gerçek cihazda denenmedi. Mesaj metin moderasyonu (bağlantı/telefon paylaşımı uyarısı) Faz 6'da.
 
-### Faz 6 — Güvenlik, moderasyon, admin
+### Faz 6 — Güvenlik, moderasyon, admin ✅ (2026-11-19, onay bekliyor)
 
-- Şikayet (kanıt anlık görüntüsü, öncelik), metin kontrolleri, selfie doğrulama.
-- Admin API + web paneli (AdminUser, TOTP, roller), AuditLog, AccessLog (5651).
-- Veri dışa aktarma işi; silme işinin medya dahil tamamlanması.
-- **Testler:** şikayet akışı, admin rol yetkileri, audit kaydı, dışa aktarma içeriği, kalıcı silme sonrası veri kalmaması.
-- **Bağımlı kararlar:** #1 doğrulama zorunluluğu, #13 admin paneli, #14 doğrulama sağlayıcı.
+- Şikayet: profil, fotoğraf veya mesaj için; neden önceliği (reşit olmayan en üstte), şikayet anındaki kanıt kopyası (profil alanları, fotoğraf kopyaları, mesaj + son 20 mesaj bağlamı), aynı şikayet tekrarlanmaz, "engelle" seçeneği. 18 yaş altı şüphesinde veya 3 farklı kişiden açık şikayette hesap otomatik olarak keşfetten gizlenir (karar moderatörde).
+- Metin kontrolü: telefon, e-posta, bağlantı, IBAN, sosyal medya kullanıcı adı tespiti. Profilde reddedilir (`CONTACT_INFO_NOT_ALLOWED`), sohbette mesaj işaretlenir ve alıcıya güvenlik uyarısı gösterilir.
+- Selfie doğrulama (K11): ön kamerayla selfie → moderatör profil fotoğraflarıyla karşılaştırır → rozet. Moderatör doğrulama isteyebilir; yapılana kadar keşfette görünmez. Selfie karardan 30 gün sonra silinir. Sağlayıcı arayüzü + moderatör incelemesi (K12).
+- Yönetim: ayrı web paneli `apps/admin` (K10) — e-posta + parola (argon2id) + TOTP, 5 hatalı denemede 15 dk kilit, 8 saatlik oturum, her istekte rol yeniden okunur. Roller: SUPPORT (görüntüleme), MODERATOR (şikayet, fotoğraf, selfie kararı, keşfetten gizleme, doğrulama isteme), ADMIN/SUPER_ADMIN (askıya alma, ban, geri açma, denetim kaydı). Yönetici mesaj içeriğini yalnızca şikayet kanıtında görür.
+- Kayıtlar: `AuditLog` (her yönetici işlemi) ve `AccessLog` (5651: oturum açma ve değiştiren istekler, IP + kaynak port) veritabanı tetikleyicisiyle değiştirilemez; erişim kaydı 730 gün, şikayet kanıtı karardan 730 gün sonra silinir.
+- Veri dışa aktarma: istek → worker JSON dosyası hazırlar (yalnızca kişinin kendi verisi; telefon özeti ve karşı tarafın mesajları yok) → 10 dk geçerli indirme adresi; dosya 7 gün saklanır. Hesap silme, kullanıcının tüm medya önekini (fotoğraflar, selfie, dışa aktarma) siler.
+- Mobil: keşfet kartı, eşleşme ve sohbetten şikayet (mesaja uzun basma + başlıkta bayrak), doğrulanmış rozeti (kart, sohbet, profil), işaretli mesaj uyarısı, selfie doğrulama ekranı, "Verilerimi indir", keşfet kontrol listesinde doğrulama ve inceleme durumları, profil formunda iletişim bilgisi hatası.
+- **Testler:** API 109 birim + 143 e2e (şikayet ve kanıt, otomatik gizleme, rol yetkileri, TOTP/kilit, audit ve access log değiştirilemezliği, dışa aktarma içeriği, saklama süreleri), mobil 33. Panel (giriş, şikayet kararı, hesap işlemi, denetim kaydı) ve mobil şikayet → panelde kanıt, dışa aktarma akışı tarayıcıda uçtan uca denendi.
+- **Bilinen sınırlamalar:** Selfie çekimi (kamera) web önizlemede denenemedi; yükleme yolu fotoğraflarla aynı. Panel IP kısıtı / VPN arkasında yayın Faz 7 altyapısında. Otomatik yüz karşılaştırma yok (K12: moderatör). Metin kontrolü kural tabanlı; "beş beş iki" gibi yazıyla numara yakalanmaz.
 
 ### Faz 7 — Lansman hazırlığı
 

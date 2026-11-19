@@ -50,6 +50,11 @@ export class MessageDto {
   @ApiProperty({ description: 'Silinmiş mesajlarda boş' })
   body!: string;
 
+  @ApiProperty({
+    description: 'İletişim bilgisi/bağlantı içeriyor: alıcıya dolandırıcılık uyarısı gösterilmeli',
+  })
+  flagged!: boolean;
+
   @ApiProperty({ type: String, format: 'date-time' })
   createdAt!: Date;
 
@@ -81,6 +86,9 @@ export class ConversationUserDto {
 
   @ApiProperty()
   displayName!: string;
+
+  @ApiProperty({ description: 'Selfie doğrulaması onaylı' })
+  verified!: boolean;
 
   @ApiProperty()
   age!: number;

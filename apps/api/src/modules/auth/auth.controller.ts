@@ -97,6 +97,8 @@ export class AuthController {
     const result = await this.auth.signIn(requirePhone(body.phone), body.code, {
       deviceId: body.deviceId,
       userAgent: req.headers['user-agent'],
+      ip: req.ip,
+      port: req.socket.remotePort,
     });
     return { data: result };
   }

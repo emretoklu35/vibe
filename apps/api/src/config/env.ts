@@ -36,6 +36,10 @@ export const envSchema = z
     PHONE_ENCRYPTION_KEY: base64Key(32, 32),
     /** Access token (HS256) imza anahtarı. ≥ 32 bayt. */
     JWT_ACCESS_SECRET: base64Key(32),
+    /** Yönetim paneli oturum token'ı (HS256) imza anahtarı; kullanıcı anahtarından ayrıdır. ≥ 32 bayt. */
+    JWT_ADMIN_SECRET: base64Key(32),
+    /** 5651 erişim kaydı saklama süresi (gün). Hukuki teyit: açık karar #17. */
+    ACCESS_LOG_RETENTION_DAYS: z.coerce.number().int().min(365).max(3650).default(730),
     ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
     /** SMS sağlayıcısı. Şimdilik yalnızca `console` (kodu loga yazar; production'da yasak). */
@@ -115,7 +119,12 @@ export const envSchema = z
       });
     }
     if (env.NODE_ENV === 'production') {
-      for (const key of ['PHONE_HMAC_KEY', 'PHONE_ENCRYPTION_KEY', 'JWT_ACCESS_SECRET'] as const) {
+      for (const key of [
+        'PHONE_HMAC_KEY',
+        'PHONE_ENCRYPTION_KEY',
+        'JWT_ACCESS_SECRET',
+        'JWT_ADMIN_SECRET',
+      ] as const) {
         if (env[key].toString('base64').startsWith(DEV_ONLY_KEY_PREFIX)) {
           ctx.addIssue({
             code: 'custom',

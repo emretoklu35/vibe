@@ -16,6 +16,7 @@ import type {
   UpsertProfileDto,
 } from './dto/profile.dto.js';
 import type { PreferenceDto, SetPreferencesDto } from './dto/preferences.dto.js';
+import { detectContactInfo } from '../safety/text/contact-info.js';
 import { fuzzLocation } from './location-fuzz.js';
 
 const PROFILE_SELECT = {
@@ -65,6 +66,18 @@ export class ProfilesService {
   }
 
   async upsert(userId: string, input: UpsertProfileDto): Promise<ProfileDto> {
+    // Profil metinleri herkese açık: uygulama dışına yönlendiren iletişim bilgisi kabul edilmez (R6).
+    const offending = (['bio', 'jobTitle', 'cityName'] as const).filter(
+      (field) => input[field] && detectContactInfo(input[field]).length > 0,
+    );
+    if (offending.length > 0) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.CONTACT_INFO_NOT_ALLOWED,
+        'Profilinde telefon, e-posta, bağlantı veya sosyal medya hesabı paylaşamazsın',
+        offending.map((field) => ({ field, messages: ['İletişim bilgisi içeriyor'] })),
+      );
+    }
     const data = {
       displayName: input.displayName,
       gender: input.gender,

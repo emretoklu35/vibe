@@ -21,6 +21,7 @@ export type CandidateRow = {
   age: number;
   distanceMeters: number;
   lastActiveAt: Date;
+  verified: boolean;
   candidateMaxDistanceKm: number;
   displayName: string;
   gender: Gender;
@@ -82,6 +83,7 @@ export class DiscoveryRepository {
           date_part('year', age(${filter.today}::date, u."birthDate"))::int AS "age",
           ST_Distance(p."location", viewer."location") AS "distanceMeters",
           u."lastActiveAt",
+          (u."verifiedAt" IS NOT NULL) AS "verified",
           pr."maxDistanceKm" AS "candidateMaxDistanceKm",
           pr."minAge" AS "candidateMinAge",
           pr."maxAge" AS "candidateMaxAge",
@@ -99,6 +101,8 @@ export class DiscoveryRepository {
         WHERE u."id" <> ${filter.viewerId}::uuid
           AND u."status" = 'ACTIVE'
           AND u."birthDate" IS NOT NULL
+          AND NOT u."verificationRequired"
+          AND NOT u."moderationHold"
           AND p."isDiscoverable"
           AND p."location" IS NOT NULL
           AND viewer."location" IS NOT NULL
@@ -142,6 +146,7 @@ export class DiscoveryRepository {
         date_part('year', age(${today}::date, u."birthDate"))::int AS "age",
         COALESCE(ST_Distance(p."location", v."location"), 0) AS "distanceMeters",
         u."lastActiveAt",
+        (u."verifiedAt" IS NOT NULL) AS "verified",
         COALESCE(pr."maxDistanceKm", 50) AS "candidateMaxDistanceKm",
         p."displayName", p."gender", p."bio", p."jobTitle", p."heightCm", p."cityName",
         p."relationshipGoal"::text AS "relationshipGoal",
