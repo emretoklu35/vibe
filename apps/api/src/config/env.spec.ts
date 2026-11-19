@@ -5,6 +5,9 @@ const key = (len: number) => Buffer.alloc(len, 1).toString('base64');
 const base = {
   DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
   REDIS_URL: 'redis://localhost:6379/0',
+  S3_BUCKET: 'vibe-test',
+  S3_ACCESS_KEY_ID: 'k',
+  S3_SECRET_ACCESS_KEY: 's',
   PHONE_HMAC_KEY: key(32),
   PHONE_ENCRYPTION_KEY: key(32),
   JWT_ACCESS_SECRET: key(32),

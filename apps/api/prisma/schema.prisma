@@ -21,6 +21,8 @@ model Interest {
   labelEn  String
   isActive Boolean @default(true)
 
+  users UserInterest[]
+
   @@index([category])
 }
 
@@ -74,6 +76,10 @@ model User {
   sessions     Session[]
   consents     ConsentRecord[]
   dataRequests DataRequest[]
+  profile      Profile?
+  photos       ProfilePhoto[]
+  interests    UserInterest[]
+  preference   Preference?
 
   @@index([status, lastActiveAt])
 }
@@ -128,4 +134,122 @@ model DataRequest {
 
   @@index([type, status, scheduledFor])
   @@index([userId, type, status])
+}
+
+// ─── Faz 3: profil, fotoğraf, tercihler ───────────────────────
+
+enum Gender {
+  WOMAN
+  MAN
+  NON_BINARY
+  OTHER
+}
+
+enum RelationshipGoal {
+  LONG_TERM
+  LONG_TERM_OPEN_TO_SHORT
+  SHORT_TERM_OPEN_TO_LONG
+  SHORT_TERM
+  NEW_FRIENDS
+  NOT_SURE
+}
+
+enum Frequency {
+  NEVER
+  SOMETIMES
+  OFTEN
+  PREFER_NOT_TO_SAY
+}
+
+enum CommunicationStyle {
+  TEXTER
+  CALLER
+  IN_PERSON
+  MIXED
+}
+
+/// Fotoğrafın yaşam döngüsü: yükleme bekleniyor → işleniyor (EXIF temizleme + denetim) → sonuç.
+enum PhotoStatus {
+  AWAITING_UPLOAD
+  PROCESSING
+  APPROVED
+  REJECTED
+  NEEDS_REVIEW
+  FAILED
+}
+
+model Profile {
+  userId             String                                @id @db.Uuid
+  displayName        String                                @db.VarChar(40)
+  gender             Gender
+  bio                String?                               @db.VarChar(500)
+  jobTitle           String?                               @db.VarChar(60)
+  heightCm           Int?
+  relationshipGoal   RelationshipGoal?
+  smoking            Frequency?
+  drinking           Frequency?
+  exercise           Frequency?
+  wantsChildren      Boolean?
+  communicationStyle CommunicationStyle?
+  /// Kullanıcının seçtiği, profilde görünen yer adı (ör. "Kadıköy, İstanbul")
+  cityName           String?                               @db.VarChar(80)
+  /// Bulanıklaştırılmış konum (≈1 km ızgara + kullanıcıya özgü ≤500 m sapma). Tam koordinat saklanmaz.
+  location           Unsupported("geography(Point,4326)")?
+  locationUpdatedAt  DateTime?
+  /// Kullanıcı kendini keşfetten gizleyebilir
+  isDiscoverable     Boolean                               @default(true)
+  createdAt          DateTime                              @default(now())
+  updatedAt          DateTime                              @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([isDiscoverable, gender])
+  @@index([location], type: Gist, map: "Profile_location_gix")
+}
+
+model ProfilePhoto {
+  id               String      @id @default(uuid()) @db.Uuid
+  userId           String      @db.Uuid
+  /// Nesne depolamadaki anahtar (URL değil). İşlenmiş görsel bu anahtardadır.
+  storageKey       String      @unique @db.VarChar(200)
+  /// İstemcinin yüklediği ham dosyanın anahtarı; işlendikten sonra silinir.
+  uploadKey        String?     @unique @db.VarChar(200)
+  position         Int
+  status           PhotoStatus @default(AWAITING_UPLOAD)
+  width            Int?
+  height           Int?
+  /// Denetim sağlayıcısının etiketleri/skorları (yalnızca inceleme için)
+  moderationLabels Json?
+  createdAt        DateTime    @default(now())
+  processedAt      DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, position])
+  @@index([status, createdAt])
+}
+
+model UserInterest {
+  userId     String @db.Uuid
+  interestId Int
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interest Interest @relation(fields: [interestId], references: [id], onDelete: Restrict)
+
+  @@id([userId, interestId])
+  @@index([interestId])
+}
+
+/// Keşfet tercihleri. seekingGenders özel nitelikli veridir: yalnızca SPECIAL_CATEGORY_ORIENTATION
+/// rızası güncelken dolu olabilir (K7). Satırın varlığı "tercih adımı tamamlandı" demektir.
+model Preference {
+  userId            String             @id @db.Uuid
+  minAge            Int                @default(18)
+  maxAge            Int                @default(60)
+  maxDistanceKm     Int                @default(50)
+  seekingGenders    Gender[]
+  relationshipGoals RelationshipGoal[]
+  updatedAt         DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -8,7 +8,7 @@ Her faz küçük, bağımsız test edilebilir ve şu raporla biter (brief §12):
 flowchart TD
   F0[Faz 0\nPlanlama ✔] --> F1[Faz 1\nTemel altyapı ✔]
   F1 --> F2[Faz 2\nAuth + hesap + rıza ✔]
-  F2 --> F3[Faz 3\nProfil + medya + konum]
+  F2 --> F3[Faz 3\nProfil + medya + konum ✔]
   F3 --> F4[Faz 4\nKeşfet + eşleşme + engelleme]
   F4 --> F5[Faz 5\nSohbet + push]
   F3 --> F6[Faz 6\nGüvenlik + moderasyon + admin]
@@ -55,17 +55,21 @@ flowchart TD
 - **Ertelenenler:** `UserDevice` / push kaydı → Faz 5 (push ile birlikte). Sentry → Faz 7 (hesap/DSN ve yurt dışı aktarım kararı gerekir). Gerçek SMS sağlayıcı → karar #9 verilince.
 - **Bağımlı kararlar:** #9 SMS sağlayıcı (production için zorunlu), #15 hukuki metinler.
 
-### Faz 3 — Profil, medya, konum
+### Faz 3 — Profil, medya, konum ✅ (2026-11-19, onay bekliyor)
 
-- Profil CRUD, ilgi alanları, tercihler (özel nitelikli veri rıza kontrolü).
-- S3 uyumlu depolama (yerelde MinIO veya alternatifi) ve fotoğraf: presigned yükleme, EXIF temizleme, moderasyon adaptörü (önce sahte/manuel, sonra sağlayıcı), sıralama, silme.
-- Konum bulanıklaştırma + rate limit.
-- Mobil: onboarding ekranları, fotoğraf seçme/yükleme, profil düzenleme.
-- **Testler:** profil oluşturma/düzenleme, fotoğraf yükleme yetkisi (başkasının fotoğrafı, yanlış içerik tipi, boyut), onaysız fotoğrafın görünmemesi, konum yanıtında koordinat olmaması.
-- **Bağımlı kararlar:** #2 cinsiyet seçenekleri, #12 moderasyon sağlayıcı.
+- Kararlar: K6 cinsiyet seçenekleri, K7 aranan cinsiyet için ayrı açık rıza (yoksa keşfet kapalı), K8 sağlayıcıdan bağımsız denetim, K9 yerel S3 = SeaweedFS.
+- Profil (ad, cinsiyet, ilişki beklentisi, hakkında, meslek, boy, şehir, yaşam tarzı, iletişim tarzı, keşfette görünürlük), ilgi alanları (en fazla 10).
+- Tercihler: yaş aralığı, mesafe, ilişki beklentisi; aranan cinsiyet yalnızca güncel rıza varken kaydedilir, rıza geri alınınca aynı işlemde silinir.
+- Fotoğraf: presigned doğrudan yükleme → worker'da gerçek görsel doğrulama (beyan edilen türe güvenilmez), EXIF/GPS temizleme, 1600 px JPEG, denetim arayüzü (geliştirmede otomatik onay, production'da reddedilir); en fazla 6, sıralama, silme, yarım yüklemelerin temizliği, hesap silmede tüm medyanın silinmesi.
+- Konum: ≈1 km ızgara + kullanıcıya özgü sabit sapma; gerçek koordinat saklanmaz/dönmez; saatte 6 güncelleme sınırı; PostGIS GIST index.
+- Onboarding: doğum tarihi → rızalar → profil → fotoğraf → tercihler.
+- Mobil: profil/fotoğraf/tercih onboarding adımları, profil düzenleme, fotoğraf yönetimi (ana fotoğraf, silme), tercih düzenleme; görseller cihazda JPEG'e çevrilip küçültülerek yüklenir.
+- **Testler:** API 70 birim + 88 e2e (gerçek PostGIS + SeaweedFS), mobil 25; onboarding ve düzenleme web önizlemede uçtan uca denendi.
+- **Ertelenenler:** Mobilde konum izni ve konum gönderme → Faz 4 (keşfet ekranıyla birlikte; API hazır). Gerçek denetim sağlayıcısı → karar #12. Fotoğraf seçicinin kendisi (işletim sistemi penceresi) otomatik denenemedi; yükleme yolu sayfa içinden aynı API ve S3 çağrılarıyla doğrulandı.
 
 ### Faz 4 — Keşfet, eşleşme, engelleme
 
+- Mobilde konum izni + `PUT /profiles/me/location` (Faz 3'ten).
 - Sert filtreler (PostGIS + SQL), puanlama (saf fonksiyonlar), açıklamalar, cache.
 - Like/Pass, karşılıklı eşleşme (transaction + unique yarış testi), unmatch, `GET /matches`.
 - Engelleme (keşfet filtresine gerekli olduğu için burada).

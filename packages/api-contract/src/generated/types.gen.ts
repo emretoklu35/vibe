@@ -37,7 +37,8 @@ export type TokenPairDto = {
 
 export type AccountStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED' | 'DELETION_PENDING';
 
-export type OnboardingStep = 'BIRTH_DATE' | 'CONSENTS' | 'COMPLETE';
+export type OnboardingStep =
+  'BIRTH_DATE' | 'CONSENTS' | 'PROFILE' | 'PHOTOS' | 'PREFERENCES' | 'COMPLETE';
 
 export type SignInUserDto = {
   id: string;
@@ -190,7 +191,16 @@ export type ErrorBodyDto = {
     | 'INVALID_BIRTH_DATE'
     | 'CONSENT_VERSION_MISMATCH'
     | 'CONSENT_REQUIRED_CANNOT_WITHDRAW'
-    | 'CONSENT_TYPE_UNAVAILABLE';
+    | 'CONSENT_TYPE_UNAVAILABLE'
+    | 'CONSENT_REQUIRED'
+    | 'PROFILE_REQUIRED'
+    | 'INVALID_INTEREST'
+    | 'PHOTO_LIMIT_REACHED'
+    | 'PHOTO_TOO_LARGE'
+    | 'UNSUPPORTED_MEDIA_TYPE'
+    | 'UPLOAD_NOT_FOUND'
+    | 'PHOTO_NOT_AWAITING_UPLOAD'
+    | 'INVALID_PHOTO_ORDER';
   message: string;
   /**
    * Hataya özgü ayrıntılar (ör. alan hataları)
@@ -236,6 +246,179 @@ export type ConsentDecisionDto = {
 
 export type RecordConsentsDto = {
   decisions: Array<ConsentDecisionDto>;
+};
+
+export type InterestDto = {
+  id: number;
+  slug: string;
+  category: string;
+  label: string;
+};
+
+export type InterestsResponseDto = {
+  data: Array<InterestDto>;
+};
+
+export type Gender = 'WOMAN' | 'MAN' | 'NON_BINARY' | 'OTHER';
+
+export type RelationshipGoal =
+  | 'LONG_TERM'
+  | 'LONG_TERM_OPEN_TO_SHORT'
+  | 'SHORT_TERM_OPEN_TO_LONG'
+  | 'SHORT_TERM'
+  | 'NEW_FRIENDS'
+  | 'NOT_SURE';
+
+export type Frequency = 'NEVER' | 'SOMETIMES' | 'OFTEN' | 'PREFER_NOT_TO_SAY';
+
+export type CommunicationStyle = 'TEXTER' | 'CALLER' | 'IN_PERSON' | 'MIXED';
+
+export type ProfileDto = {
+  displayName: string;
+  gender: Gender;
+  bio: string | null;
+  jobTitle: string | null;
+  heightCm: number | null;
+  relationshipGoal: RelationshipGoal | null;
+  smoking: Frequency | null;
+  drinking: Frequency | null;
+  exercise: Frequency | null;
+  wantsChildren: boolean | null;
+  communicationStyle: CommunicationStyle | null;
+  cityName: string | null;
+  isDiscoverable: boolean;
+  /**
+   * Konum son güncelleme (koordinat dönülmez)
+   */
+  locationUpdatedAt: string | null;
+};
+
+export type MyProfileDto = {
+  profile: ProfileDto | null;
+  interests: Array<InterestDto>;
+};
+
+export type MyProfileResponseDto = {
+  data: MyProfileDto;
+};
+
+export type UpsertProfileDto = {
+  displayName: string;
+  gender: Gender;
+  bio?: string | null;
+  jobTitle?: string | null;
+  heightCm?: number | null;
+  relationshipGoal?: RelationshipGoal | null;
+  smoking?: Frequency | null;
+  drinking?: Frequency | null;
+  exercise?: Frequency | null;
+  wantsChildren?: boolean | null;
+  communicationStyle?: CommunicationStyle | null;
+  cityName?: string | null;
+  /**
+   * false: keşfette görünme
+   */
+  isDiscoverable?: boolean;
+};
+
+export type SetInterestsDto = {
+  interestIds: Array<number>;
+};
+
+export type PreferenceDto = {
+  minAge: number;
+  maxAge: number;
+  maxDistanceKm: number;
+  /**
+   * Özel nitelikli veri: yalnızca SPECIAL_CATEGORY_ORIENTATION rızası varken dolu olabilir
+   */
+  seekingGenders: Array<Gender>;
+  relationshipGoals: Array<RelationshipGoal>;
+};
+
+export type PreferenceResponseDto = {
+  data: PreferenceDto | null;
+};
+
+export type SetPreferencesDto = {
+  minAge: number;
+  maxAge: number;
+  maxDistanceKm: number;
+  seekingGenders: Array<Gender>;
+  relationshipGoals: Array<RelationshipGoal>;
+};
+
+export type UpdateLocationDto = {
+  latitude: number;
+  longitude: number;
+};
+
+export type LocationUpdatedDto = {
+  locationUpdatedAt: string;
+};
+
+export type LocationUpdatedResponseDto = {
+  data: LocationUpdatedDto;
+};
+
+export type PhotoStatus =
+  'AWAITING_UPLOAD' | 'PROCESSING' | 'APPROVED' | 'REJECTED' | 'NEEDS_REVIEW' | 'FAILED';
+
+export type PhotoDto = {
+  id: string;
+  /**
+   * 0 = ana fotoğraf
+   */
+  position: number;
+  status: PhotoStatus;
+  /**
+   * Kısa ömürlü (10 dk) görüntüleme adresi; işlenmemiş fotoğraflarda null
+   */
+  url: string | null;
+  width: number | null;
+  height: number | null;
+};
+
+export type PhotosResponseDto = {
+  data: Array<PhotoDto>;
+};
+
+export type CreatePhotoUploadDto = {
+  contentType: 'image/jpeg' | 'image/png' | 'image/webp';
+  /**
+   * Bayt cinsinden dosya boyutu (en fazla 10485760)
+   */
+  sizeBytes: number;
+};
+
+export type PhotoUploadDto = {
+  photo: PhotoDto;
+  /**
+   * Dosyanın PUT ile yükleneceği adres (5 dk geçerli)
+   */
+  uploadUrl: string;
+  /**
+   * Yüklemede gönderilmesi zorunlu başlıklar
+   */
+  uploadHeaders: {
+    [key: string]: string;
+  };
+  expiresAt: string;
+};
+
+export type PhotoUploadResponseDto = {
+  data: PhotoUploadDto;
+};
+
+export type PhotoResponseDto = {
+  data: PhotoDto;
+};
+
+export type ReorderPhotosDto = {
+  /**
+   * Fotoğrafların yeni sırası (ilk = ana fotoğraf)
+   */
+  photoIds: Array<string>;
 };
 
 export type LiveDataDto = {
@@ -466,6 +649,178 @@ export type PrivacyControllerRecordV1Responses = {
 
 export type PrivacyControllerRecordV1Response =
   PrivacyControllerRecordV1Responses[keyof PrivacyControllerRecordV1Responses];
+
+export type ProfilesControllerInterestsV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/interests';
+};
+
+export type ProfilesControllerInterestsV1Responses = {
+  200: InterestsResponseDto;
+};
+
+export type ProfilesControllerInterestsV1Response =
+  ProfilesControllerInterestsV1Responses[keyof ProfilesControllerInterestsV1Responses];
+
+export type ProfilesControllerMeV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/profiles/me';
+};
+
+export type ProfilesControllerMeV1Responses = {
+  200: MyProfileResponseDto;
+};
+
+export type ProfilesControllerMeV1Response =
+  ProfilesControllerMeV1Responses[keyof ProfilesControllerMeV1Responses];
+
+export type ProfilesControllerUpsertV1Data = {
+  body: UpsertProfileDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/profiles/me';
+};
+
+export type ProfilesControllerUpsertV1Responses = {
+  200: MyProfileResponseDto;
+};
+
+export type ProfilesControllerUpsertV1Response =
+  ProfilesControllerUpsertV1Responses[keyof ProfilesControllerUpsertV1Responses];
+
+export type ProfilesControllerSetInterestsV1Data = {
+  body: SetInterestsDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/profiles/me/interests';
+};
+
+export type ProfilesControllerSetInterestsV1Responses = {
+  200: MyProfileResponseDto;
+};
+
+export type ProfilesControllerSetInterestsV1Response =
+  ProfilesControllerSetInterestsV1Responses[keyof ProfilesControllerSetInterestsV1Responses];
+
+export type ProfilesControllerPreferencesV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/profiles/me/preferences';
+};
+
+export type ProfilesControllerPreferencesV1Responses = {
+  200: PreferenceResponseDto;
+};
+
+export type ProfilesControllerPreferencesV1Response =
+  ProfilesControllerPreferencesV1Responses[keyof ProfilesControllerPreferencesV1Responses];
+
+export type ProfilesControllerSetPreferencesV1Data = {
+  body: SetPreferencesDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/profiles/me/preferences';
+};
+
+export type ProfilesControllerSetPreferencesV1Responses = {
+  200: PreferenceResponseDto;
+};
+
+export type ProfilesControllerSetPreferencesV1Response =
+  ProfilesControllerSetPreferencesV1Responses[keyof ProfilesControllerSetPreferencesV1Responses];
+
+export type ProfilesControllerLocationV1Data = {
+  body: UpdateLocationDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/profiles/me/location';
+};
+
+export type ProfilesControllerLocationV1Responses = {
+  200: LocationUpdatedResponseDto;
+};
+
+export type ProfilesControllerLocationV1Response =
+  ProfilesControllerLocationV1Responses[keyof ProfilesControllerLocationV1Responses];
+
+export type PhotosControllerListV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/profiles/me/photos';
+};
+
+export type PhotosControllerListV1Responses = {
+  200: PhotosResponseDto;
+};
+
+export type PhotosControllerListV1Response =
+  PhotosControllerListV1Responses[keyof PhotosControllerListV1Responses];
+
+export type PhotosControllerCreateUploadV1Data = {
+  body: CreatePhotoUploadDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/profiles/me/photos/upload-url';
+};
+
+export type PhotosControllerCreateUploadV1Responses = {
+  201: PhotoUploadResponseDto;
+};
+
+export type PhotosControllerCreateUploadV1Response =
+  PhotosControllerCreateUploadV1Responses[keyof PhotosControllerCreateUploadV1Responses];
+
+export type PhotosControllerCompleteV1Data = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/profiles/me/photos/{id}/complete';
+};
+
+export type PhotosControllerCompleteV1Responses = {
+  200: PhotoResponseDto;
+};
+
+export type PhotosControllerCompleteV1Response =
+  PhotosControllerCompleteV1Responses[keyof PhotosControllerCompleteV1Responses];
+
+export type PhotosControllerReorderV1Data = {
+  body: ReorderPhotosDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/profiles/me/photos/order';
+};
+
+export type PhotosControllerReorderV1Responses = {
+  200: PhotosResponseDto;
+};
+
+export type PhotosControllerReorderV1Response =
+  PhotosControllerReorderV1Responses[keyof PhotosControllerReorderV1Responses];
+
+export type PhotosControllerRemoveV1Data = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/profiles/me/photos/{id}';
+};
+
+export type PhotosControllerRemoveV1Responses = {
+  204: void;
+};
+
+export type PhotosControllerRemoveV1Response =
+  PhotosControllerRemoveV1Responses[keyof PhotosControllerRemoveV1Responses];
 
 export type HealthControllerLiveV1Data = {
   body?: never;

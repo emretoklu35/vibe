@@ -20,7 +20,7 @@ flowchart LR
   end
   PG[(PostgreSQL + PostGIS)]
   R[(Redis\ncache · rate limit · OTP · socket adapter · kuyruk)]
-  S3[(S3 uyumlu depolama\nprivate bucket)]
+  S3[(S3 uyumlu depolama\nprivate bucket\nyerelde SeaweedFS)]
   SMS[SMS sağlayıcı]
   PUSH[FCM / APNs]
   MOD[Görsel moderasyon]

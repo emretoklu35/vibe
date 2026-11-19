@@ -57,6 +57,23 @@ export const LEGAL_DOCUMENTS: readonly LegalDocument[] = [
       ].join('\n'),
   },
   {
+    type: 'SPECIAL_CATEGORY_ORIENTATION',
+    version: 'orientation-tr-2026-11-draft1',
+    required: false,
+    kind: 'consent',
+    title: 'Aradığın Kişilere İlişkin Açık Rıza',
+    body:
+      DRAFT_NOTICE +
+      [
+        'Keşfet ve eşleşme hizmetini sunabilmek için hangi cinsiyetten kişilerle tanışmak istediğini işlememiz gerekir. Bu bilgi, KVKK m.6 kapsamında **özel nitelikli kişisel veri** (cinsel hayata ilişkin) sayılabileceğinden yalnızca açık rızanla işlenir.',
+        '',
+        '- Bu bilgi yalnızca sana uygun kişileri göstermek ve seni uygun kişilere göstermek için kullanılır.',
+        '- Profilinde başkalarına gösterilmez.',
+        '- Rızanı istediğin zaman geri alabilirsin; bu durumda tercihin silinir ve keşfet/eşleşme durur.',
+        '- Rıza vermezsen profilini oluşturabilirsin, ancak keşfet ve eşleşme kullanılamaz.',
+      ].join('\n'),
+  },
+  {
     type: 'MARKETING_NOTIFICATIONS',
     version: 'marketing-tr-2026-11-draft1',
     required: false,

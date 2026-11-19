@@ -42,7 +42,7 @@ export default function BirthDateScreen() {
 
   return (
     <FormScreen
-      step="1 / 2"
+      step="1 / 5"
       title="Doğum tarihin"
       subtitle="VIBE 18 yaş ve üzeri içindir. Profilinde yalnızca yaşın görünür."
       footer={

@@ -17,6 +17,9 @@ import { LoadingView, UnreachableView } from '@/features/session/status-views';
 
 const appConfigKey = ['app-config'] as const;
 
+/** Bağlamıyla birlikte kendi adımında sorulan rızalar (K7: aranan cinsiyet → tercihler adımı). */
+const ASKED_ELSEWHERE = new Set(['SPECIAL_CATEGORY_ORIENTATION']);
+
 function checkboxLabel(doc: LegalDocumentSummaryDto): string {
   return doc.kind === 'acknowledgement'
     ? `${doc.title}'ni okudum`
@@ -52,12 +55,12 @@ export default function ConsentsScreen() {
   if (config.isError)
     return <UnreachableView onRetry={() => void config.refetch()} busy={config.isFetching} />;
 
-  const docs = config.data.legalDocuments;
+  const docs = config.data.legalDocuments.filter((d) => !ASKED_ELSEWHERE.has(d.type));
   const allRequired = docs.filter((d) => d.required).every((d) => checked[d.type]);
 
   return (
     <FormScreen
-      step="2 / 2"
+      step="2 / 5"
       title="Gizlilik ve koşullar"
       subtitle="Verilerini nasıl işlediğimizi ve topluluk kurallarımızı oku. Yıldızlı olanlar zorunludur."
       footer={

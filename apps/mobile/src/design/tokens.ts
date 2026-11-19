@@ -33,6 +33,9 @@ export type ColorTokens = {
   accentSecondary: string;
   success: string;
   danger: string;
+  /** Fotoğraf üstü etiketler için yarı saydam zemin ve üstündeki metin. */
+  overlay: string;
+  onOverlay: string;
 };
 
 export const colors: Record<'light' | 'dark', ColorTokens> = {
@@ -48,6 +51,8 @@ export const colors: Record<'light' | 'dark', ColorTokens> = {
     accentSecondary: palette.lilac400,
     success: palette.success,
     danger: palette.danger,
+    overlay: 'rgba(22, 17, 28, 0.78)',
+    onOverlay: palette.ivory50,
   },
   light: {
     background: palette.ivory50,
@@ -61,6 +66,8 @@ export const colors: Record<'light' | 'dark', ColorTokens> = {
     accentSecondary: palette.lilac600,
     success: '#1F9E68',
     danger: '#D93A50',
+    overlay: 'rgba(22, 17, 28, 0.72)',
+    onOverlay: palette.ivory50,
   },
 };
 

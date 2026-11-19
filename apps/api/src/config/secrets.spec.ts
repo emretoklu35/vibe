@@ -9,6 +9,9 @@ const realKey = (len: number) => Buffer.alloc(len, 7).toString('base64');
 const base = {
   DATABASE_URL: 'postgresql://u:p@localhost/db',
   REDIS_URL: 'redis://localhost',
+  S3_BUCKET: 'vibe-test',
+  S3_ACCESS_KEY_ID: 'k',
+  S3_SECRET_ACCESS_KEY: 's',
   PHONE_HMAC_KEY: realKey(32),
   PHONE_ENCRYPTION_KEY: realKey(32),
   JWT_ACCESS_SECRET: realKey(48),

@@ -50,6 +50,12 @@ export class ConsentsService {
     return REQUIRED_DOCUMENTS.every((doc) => states.some((s) => s.type === doc.type && s.upToDate));
   }
 
+  /** Belgenin güncel sürümü için verilmiş ve geri alınmamış rıza var mı? */
+  async isGranted(userId: string, type: ConsentType): Promise<boolean> {
+    const state = (await this.getStates(userId)).find((s) => s.type === type);
+    return state?.upToDate ?? false;
+  }
+
   /** Kararlar tek işlemde kaydedilir: biri geçersizse hiçbiri yazılmaz. */
   async record(userId: string, decisions: ConsentDecision[], ipAddress?: string): Promise<void> {
     for (const decision of decisions) {
@@ -80,14 +86,23 @@ export class ConsentsService {
       }
     }
 
-    await this.prisma.consentRecord.createMany({
-      data: decisions.map((d) => ({
-        userId,
-        type: d.type,
-        granted: d.granted,
-        textVersion: d.textVersion,
-        ipAddress: ipAddress?.slice(0, 64),
-      })),
-    });
+    const withdrawsOrientation = decisions.some(
+      (d) => d.type === 'SPECIAL_CATEGORY_ORIENTATION' && !d.granted,
+    );
+    await this.prisma.$transaction([
+      this.prisma.consentRecord.createMany({
+        data: decisions.map((d) => ({
+          userId,
+          type: d.type,
+          granted: d.granted,
+          textVersion: d.textVersion,
+          ipAddress: ipAddress?.slice(0, 64),
+        })),
+      }),
+      // K7: rıza geri alınınca aranan cinsiyet bilgisi aynı işlemde silinir (keşfet durur).
+      ...(withdrawsOrientation
+        ? [this.prisma.preference.updateMany({ where: { userId }, data: { seekingGenders: [] } })]
+        : []),
+    ]);
   }
 }

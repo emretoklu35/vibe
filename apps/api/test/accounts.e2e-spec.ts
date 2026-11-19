@@ -6,7 +6,13 @@ import { PrismaService } from '../src/infra/prisma/prisma.service.js';
 import { REDIS } from '../src/infra/redis/redis.module.js';
 import { AccountDeletionService } from '../src/modules/users/account-deletion.service.js';
 import { formatCalendarDate, todayInTurkey } from '../src/modules/users/age.js';
-import { bearer, resetDatabase, signIn, signInOnboarded, smsOf } from './support/auth-helpers.js';
+import {
+  bearer,
+  resetDatabase,
+  signIn,
+  signInWithConsents,
+  smsOf,
+} from './support/auth-helpers.js';
 import { createTestApp } from './support/create-test-app.js';
 
 type LegalDoc = { type: string; version: string; required: boolean };
@@ -138,7 +144,7 @@ describe('Hesap: doğum tarihi, rızalar, silme', () => {
       await request(server).get('/api/v1/legal/documents/NOPE').expect(400);
     });
 
-    it('zorunlu rızalar verilince onboarding tamamlanır', async () => {
+    it('zorunlu rızalar verilince onboarding profil adımına geçer', async () => {
       const s = await signIn(app);
       const auth = bearer(s.accessToken);
       await request(server)
@@ -163,7 +169,7 @@ describe('Hesap: doğum tarihi, rızalar, silme', () => {
           .every((c) => c.upToDate),
       ).toBe(true);
       const me = await request(server).get('/api/v1/users/me').set(auth).expect(200);
-      expect(me.body.data.onboardingStep).toBe('COMPLETE');
+      expect(me.body.data.onboardingStep).toBe('PROFILE');
     });
 
     it('eski metin sürümü → 409 CONSENT_VERSION_MISMATCH ve hiçbir karar yazılmaz', async () => {
@@ -184,7 +190,7 @@ describe('Hesap: doğum tarihi, rızalar, silme', () => {
     });
 
     it('zorunlu rıza geri alınamaz', async () => {
-      const s = await signInOnboarded(app);
+      const s = await signInWithConsents(app);
       const tos = required().find((d) => d.type === 'TERMS_OF_SERVICE')!;
       const res = await request(server)
         .post('/api/v1/privacy/consents')
@@ -195,7 +201,7 @@ describe('Hesap: doğum tarihi, rızalar, silme', () => {
     });
 
     it('isteğe bağlı rıza verilip geri alınır; geçmiş silinmez (yalnızca ekleme)', async () => {
-      const s = await signInOnboarded(app);
+      const s = await signInWithConsents(app);
       const marketing = legalDocs.find((d) => d.type === 'MARKETING_NOTIFICATIONS')!;
       const auth = bearer(s.accessToken);
       for (const granted of [true, false]) {
@@ -220,12 +226,12 @@ describe('Hesap: doğum tarihi, rızalar, silme', () => {
     });
 
     it('henüz kullanılmayan rıza türü → CONSENT_TYPE_UNAVAILABLE', async () => {
-      const s = await signInOnboarded(app);
+      const s = await signInWithConsents(app);
       const res = await request(server)
         .post('/api/v1/privacy/consents')
         .set(bearer(s.accessToken))
         .send({
-          decisions: [{ type: 'SPECIAL_CATEGORY_ORIENTATION', granted: true, textVersion: 'x' }],
+          decisions: [{ type: 'CROSS_BORDER_TRANSFER', granted: true, textVersion: 'x' }],
         })
         .expect(400);
       expect(res.body.error.code).toBe('CONSENT_TYPE_UNAVAILABLE');
@@ -234,7 +240,7 @@ describe('Hesap: doğum tarihi, rızalar, silme', () => {
 
   describe('hesap silme', () => {
     it('talep: 30 gün sonrası planlanır, tüm oturumlar kapanır', async () => {
-      const s = await signInOnboarded(app);
+      const s = await signInWithConsents(app);
       const res = await request(server)
         .delete('/api/v1/users/me')
         .set(bearer(s.accessToken))
@@ -246,7 +252,7 @@ describe('Hesap: doğum tarihi, rızalar, silme', () => {
     });
 
     it('bekleme sırasında giriş yapılabilir, yalnızca izinli uçlar açık, geri alınabilir', async () => {
-      const s = await signInOnboarded(app);
+      const s = await signInWithConsents(app);
       await request(server).delete('/api/v1/users/me').set(bearer(s.accessToken)).expect(202);
       await app.get<Redis>(REDIS).flushdb();
       const again = await signIn(app, s.phone);
@@ -267,8 +273,8 @@ describe('Hesap: doğum tarihi, rızalar, silme', () => {
     });
 
     it('süresi dolan talep worker tarafından kalıcı olarak yerine getirilir; geri alınan silinmez', async () => {
-      const doomed = await signInOnboarded(app);
-      const kept = await signInOnboarded(app);
+      const doomed = await signInWithConsents(app);
+      const kept = await signInWithConsents(app);
       for (const s of [doomed, kept]) {
         await request(server).delete('/api/v1/users/me').set(bearer(s.accessToken)).expect(202);
       }
@@ -304,7 +310,7 @@ describe('Hesap: doğum tarihi, rızalar, silme', () => {
     });
 
     it('süresi dolmamış talep silinmez', async () => {
-      const s = await signInOnboarded(app);
+      const s = await signInWithConsents(app);
       await request(server).delete('/api/v1/users/me').set(bearer(s.accessToken)).expect(202);
       await app.get(AccountDeletionService).purgeDue(new Date());
       expect(await prisma.user.findUnique({ where: { id: s.userId } })).not.toBeNull();

@@ -42,6 +42,12 @@ jobs:
       # Yalnızca-geliştirme anahtarları ("dev-only" önekli; production'da uygulama başlamaz).
       PHONE_HMAC_KEY: ZGV2LW9ubHktcGhvbmUtaG1hY4+WnaSrsrnAx87V3OM=
       PHONE_ENCRYPTION_KEY: ZGV2LW9ubHktcGhvbmUtZW5jIY+WnaSrsrnAx87V3OM=
+      S3_ENDPOINT: http://localhost:8333
+      S3_REGION: us-east-1
+      S3_BUCKET: vibe-media
+      S3_ACCESS_KEY_ID: vibe_local
+      S3_SECRET_ACCESS_KEY: vibe_local_secret_key
+      S3_FORCE_PATH_STYLE: 'true'
       JWT_ACCESS_SECRET: ZGV2LW9ubHktand0LWFjY2Vzc4+WnaSrsrnAx87V3OPq8fj/Bg0UGyIpMDc+RUxT
     steps:
       - uses: actions/checkout@v7
@@ -49,6 +55,15 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      # GitHub Actions servis konteynerlerine komut verilemediği için S3 (SeaweedFS) elle başlatılır.
+      - name: S3 (SeaweedFS) başlat
+        run: |
+          docker run -d --name s3 -p 8333:8333 \
+            -v "$PWD/infra/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro" \
+            chrislusf/seaweedfs:4.54 server -dir=/data -ip.bind=0.0.0.0 -s3 -s3.port=8333 \
+            -s3.config=/etc/seaweedfs/s3.json -volume.max=0
+          for i in $(seq 1 60); do curl -sf http://localhost:8333/healthz && exit 0; sleep 2; done
+          docker logs s3; exit 1
       - run: npm ci
       - run: npm run format:check
       - run: npm run lint --workspace @vibe/api

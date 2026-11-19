@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "vibe-local",
+      "credentials": [{ "accessKey": "vibe_local", "secretKey": "vibe_local_secret_key" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

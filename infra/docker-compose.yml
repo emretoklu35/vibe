@@ -32,6 +32,25 @@ services:
       timeout: 3s
       retries: 30
 
+  # S3 uyumlu nesne depolama (fotoğraf/ses). Production'da gerçek S3 uyumlu servis kullanılır.
+  # MinIO topluluk imajları yayından kalktığı için SeaweedFS (Apache 2.0) kullanılıyor.
+  s3:
+    image: chrislusf/seaweedfs:4.54
+    command: >-
+      server -dir=/data -ip.bind=0.0.0.0 -s3 -s3.port=8333
+      -s3.config=/etc/seaweedfs/s3.json -volume.max=0
+    ports:
+      - '127.0.0.1:58333:8333'
+    volumes:
+      - s3-data:/data
+      - ./seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:8333/healthz || exit 1']
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
 volumes:
   postgres-data:
   redis-data:
+  s3-data:

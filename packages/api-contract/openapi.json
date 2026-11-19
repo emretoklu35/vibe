@@ -379,6 +379,371 @@
         "tags": ["privacy"]
       }
     },
+    "/api/v1/interests": {
+      "get": {
+        "operationId": "ProfilesController_interests_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterestsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "İlgi alanı kataloğu",
+        "tags": ["profiles"]
+      }
+    },
+    "/api/v1/profiles/me": {
+      "get": {
+        "operationId": "ProfilesController_me_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Kendi profilin ve ilgi alanların",
+        "tags": ["profiles"]
+      },
+      "put": {
+        "operationId": "ProfilesController_upsert_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Profili oluştur / güncelle",
+        "tags": ["profiles"]
+      }
+    },
+    "/api/v1/profiles/me/interests": {
+      "put": {
+        "operationId": "ProfilesController_setInterests_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetInterestsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "İlgi alanlarını ayarla (en fazla 10)",
+        "tags": ["profiles"]
+      }
+    },
+    "/api/v1/profiles/me/preferences": {
+      "get": {
+        "operationId": "ProfilesController_preferences_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferenceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Keşfet tercihleri (henüz kaydedilmediyse null)",
+        "tags": ["profiles"]
+      },
+      "put": {
+        "description": "seekingGenders doluysa SPECIAL_CATEGORY_ORIENTATION rızası gerekir (aksi halde 403 CONSENT_REQUIRED).",
+        "operationId": "ProfilesController_setPreferences_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPreferencesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferenceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Keşfet tercihlerini kaydet",
+        "tags": ["profiles"]
+      }
+    },
+    "/api/v1/profiles/me/location": {
+      "put": {
+        "description": "Koordinat bulanıklaştırılarak saklanır (≈1 km ızgara + sabit sapma); yanıtta koordinat dönmez.",
+        "operationId": "ProfilesController_location_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationUpdatedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Konumu güncelle",
+        "tags": ["profiles"]
+      }
+    },
+    "/api/v1/profiles/me/photos": {
+      "get": {
+        "operationId": "PhotosController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotosResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Kendi fotoğrafların (durumlarıyla)",
+        "tags": ["photos"]
+      }
+    },
+    "/api/v1/profiles/me/photos/upload-url": {
+      "post": {
+        "description": "Dönen uploadUrl adresine dosyayı uploadHeaders ile PUT edin, ardından /complete çağırın. Dosya API üzerinden geçmez.",
+        "operationId": "PhotosController_createUpload_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePhotoUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoUploadResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Fotoğraf yükleme adresi al",
+        "tags": ["photos"]
+      }
+    },
+    "/api/v1/profiles/me/photos/{id}/complete": {
+      "post": {
+        "operationId": "PhotosController_complete_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Yükleme bitti: fotoğraf işlenmeye (EXIF temizleme + denetim) alınır",
+        "tags": ["photos"]
+      }
+    },
+    "/api/v1/profiles/me/photos/order": {
+      "patch": {
+        "operationId": "PhotosController_reorder_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderPhotosDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotosResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Fotoğrafları sırala (ilk = ana fotoğraf)",
+        "tags": ["photos"]
+      }
+    },
+    "/api/v1/profiles/me/photos/{id}": {
+      "delete": {
+        "operationId": "PhotosController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Fotoğrafı sil (depolamadan da silinir)",
+        "tags": ["photos"]
+      }
+    },
     "/api/v1/health/live": {
       "get": {
         "operationId": "HealthController_live_v1",
@@ -521,7 +886,7 @@
       },
       "OnboardingStep": {
         "type": "string",
-        "enum": ["BIRTH_DATE", "CONSENTS", "COMPLETE"]
+        "enum": ["BIRTH_DATE", "CONSENTS", "PROFILE", "PHOTOS", "PREFERENCES", "COMPLETE"]
       },
       "SignInUserDto": {
         "type": "object",
@@ -858,7 +1223,16 @@
               "INVALID_BIRTH_DATE",
               "CONSENT_VERSION_MISMATCH",
               "CONSENT_REQUIRED_CANNOT_WITHDRAW",
-              "CONSENT_TYPE_UNAVAILABLE"
+              "CONSENT_TYPE_UNAVAILABLE",
+              "CONSENT_REQUIRED",
+              "PROFILE_REQUIRED",
+              "INVALID_INTEREST",
+              "PHOTO_LIMIT_REACHED",
+              "PHOTO_TOO_LARGE",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "UPLOAD_NOT_FOUND",
+              "PHOTO_NOT_AWAITING_UPLOAD",
+              "INVALID_PHOTO_ORDER"
             ],
             "example": "VALIDATION_FAILED"
           },
@@ -972,6 +1346,524 @@
           }
         },
         "required": ["decisions"]
+      },
+      "InterestDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "slug", "category", "label"]
+      },
+      "InterestsResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InterestDto"
+            }
+          }
+        },
+        "required": ["data"]
+      },
+      "Gender": {
+        "type": "string",
+        "enum": ["WOMAN", "MAN", "NON_BINARY", "OTHER"]
+      },
+      "RelationshipGoal": {
+        "type": "string",
+        "enum": [
+          "LONG_TERM",
+          "LONG_TERM_OPEN_TO_SHORT",
+          "SHORT_TERM_OPEN_TO_LONG",
+          "SHORT_TERM",
+          "NEW_FRIENDS",
+          "NOT_SURE"
+        ]
+      },
+      "Frequency": {
+        "type": "string",
+        "enum": ["NEVER", "SOMETIMES", "OFTEN", "PREFER_NOT_TO_SAY"]
+      },
+      "CommunicationStyle": {
+        "type": "string",
+        "enum": ["TEXTER", "CALLER", "IN_PERSON", "MIXED"]
+      },
+      "ProfileDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "gender": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Gender"
+              }
+            ]
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true
+          },
+          "jobTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "heightCm": {
+            "type": "number",
+            "nullable": true
+          },
+          "relationshipGoal": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RelationshipGoal"
+              }
+            ]
+          },
+          "smoking": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Frequency"
+              }
+            ]
+          },
+          "drinking": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Frequency"
+              }
+            ]
+          },
+          "exercise": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Frequency"
+              }
+            ]
+          },
+          "wantsChildren": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "communicationStyle": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommunicationStyle"
+              }
+            ]
+          },
+          "cityName": {
+            "type": "string",
+            "nullable": true
+          },
+          "isDiscoverable": {
+            "type": "boolean"
+          },
+          "locationUpdatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Konum son güncelleme (koordinat dönülmez)"
+          }
+        },
+        "required": [
+          "displayName",
+          "gender",
+          "bio",
+          "jobTitle",
+          "heightCm",
+          "relationshipGoal",
+          "smoking",
+          "drinking",
+          "exercise",
+          "wantsChildren",
+          "communicationStyle",
+          "cityName",
+          "isDiscoverable",
+          "locationUpdatedAt"
+        ]
+      },
+      "MyProfileDto": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProfileDto"
+              }
+            ]
+          },
+          "interests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InterestDto"
+            }
+          }
+        },
+        "required": ["profile", "interests"]
+      },
+      "MyProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MyProfileDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "UpsertProfileDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "example": "Deniz",
+            "maxLength": 40
+          },
+          "gender": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Gender"
+              }
+            ]
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          },
+          "jobTitle": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 60
+          },
+          "heightCm": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 120,
+            "maximum": 230
+          },
+          "relationshipGoal": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RelationshipGoal"
+              }
+            ]
+          },
+          "smoking": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Frequency"
+              }
+            ]
+          },
+          "drinking": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Frequency"
+              }
+            ]
+          },
+          "exercise": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Frequency"
+              }
+            ]
+          },
+          "wantsChildren": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "communicationStyle": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommunicationStyle"
+              }
+            ]
+          },
+          "cityName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 80,
+            "example": "Kadıköy, İstanbul"
+          },
+          "isDiscoverable": {
+            "type": "boolean",
+            "description": "false: keşfette görünme"
+          }
+        },
+        "required": ["displayName", "gender"]
+      },
+      "SetInterestsDto": {
+        "type": "object",
+        "properties": {
+          "interestIds": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": ["interestIds"]
+      },
+      "PreferenceDto": {
+        "type": "object",
+        "properties": {
+          "minAge": {
+            "type": "number",
+            "minimum": 18,
+            "maximum": 99
+          },
+          "maxAge": {
+            "type": "number",
+            "minimum": 18,
+            "maximum": 99
+          },
+          "maxDistanceKm": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "seekingGenders": {
+            "type": "array",
+            "description": "Özel nitelikli veri: yalnızca SPECIAL_CATEGORY_ORIENTATION rızası varken dolu olabilir",
+            "items": {
+              "$ref": "#/components/schemas/Gender"
+            }
+          },
+          "relationshipGoals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RelationshipGoal"
+            }
+          }
+        },
+        "required": ["minAge", "maxAge", "maxDistanceKm", "seekingGenders", "relationshipGoals"]
+      },
+      "PreferenceResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PreferenceDto"
+              }
+            ]
+          }
+        },
+        "required": ["data"]
+      },
+      "SetPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "minAge": {
+            "type": "number",
+            "minimum": 18,
+            "maximum": 99
+          },
+          "maxAge": {
+            "type": "number",
+            "minimum": 18,
+            "maximum": 99
+          },
+          "maxDistanceKm": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "seekingGenders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Gender"
+            }
+          },
+          "relationshipGoals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RelationshipGoal"
+            }
+          }
+        },
+        "required": ["minAge", "maxAge", "maxDistanceKm", "seekingGenders", "relationshipGoals"]
+      },
+      "UpdateLocationDto": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "example": 41.0082
+          },
+          "longitude": {
+            "type": "number",
+            "example": 28.9784
+          }
+        },
+        "required": ["latitude", "longitude"]
+      },
+      "LocationUpdatedDto": {
+        "type": "object",
+        "properties": {
+          "locationUpdatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["locationUpdatedAt"]
+      },
+      "LocationUpdatedResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LocationUpdatedDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "PhotoStatus": {
+        "type": "string",
+        "enum": ["AWAITING_UPLOAD", "PROCESSING", "APPROVED", "REJECTED", "NEEDS_REVIEW", "FAILED"]
+      },
+      "PhotoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "position": {
+            "type": "number",
+            "description": "0 = ana fotoğraf"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhotoStatus"
+              }
+            ]
+          },
+          "url": {
+            "type": "string",
+            "nullable": true,
+            "description": "Kısa ömürlü (10 dk) görüntüleme adresi; işlenmemiş fotoğraflarda null"
+          },
+          "width": {
+            "type": "number",
+            "nullable": true
+          },
+          "height": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": ["id", "position", "status", "url", "width", "height"]
+      },
+      "PhotosResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhotoDto"
+            }
+          }
+        },
+        "required": ["data"]
+      },
+      "CreatePhotoUploadDto": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": ["image/jpeg", "image/png", "image/webp"]
+          },
+          "sizeBytes": {
+            "type": "number",
+            "description": "Bayt cinsinden dosya boyutu (en fazla 10485760)"
+          }
+        },
+        "required": ["contentType", "sizeBytes"]
+      },
+      "PhotoUploadDto": {
+        "type": "object",
+        "properties": {
+          "photo": {
+            "$ref": "#/components/schemas/PhotoDto"
+          },
+          "uploadUrl": {
+            "type": "string",
+            "description": "Dosyanın PUT ile yükleneceği adres (5 dk geçerli)"
+          },
+          "uploadHeaders": {
+            "type": "object",
+            "description": "Yüklemede gönderilmesi zorunlu başlıklar",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["photo", "uploadUrl", "uploadHeaders", "expiresAt"]
+      },
+      "PhotoUploadResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PhotoUploadDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "PhotoResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PhotoDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "ReorderPhotosDto": {
+        "type": "object",
+        "properties": {
+          "photoIds": {
+            "description": "Fotoğrafların yeni sırası (ilk = ana fotoğraf)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["photoIds"]
       },
       "LiveDataDto": {
         "type": "object",

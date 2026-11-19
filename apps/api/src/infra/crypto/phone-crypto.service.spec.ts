@@ -8,6 +8,9 @@ function service(hmacSeed = 1, encSeed = 2) {
   const config = parseEnv({
     DATABASE_URL: 'postgresql://u:p@localhost/db',
     REDIS_URL: 'redis://localhost',
+    S3_BUCKET: 'vibe-test',
+    S3_ACCESS_KEY_ID: 'k',
+    S3_SECRET_ACCESS_KEY: 's',
     PHONE_HMAC_KEY: key(hmacSeed),
     PHONE_ENCRYPTION_KEY: key(encSeed),
     JWT_ACCESS_SECRET: key(3),

@@ -6,6 +6,9 @@ import { AccountStatus } from '../../../generated/prisma/enums.js';
 export const OnboardingStep = {
   BIRTH_DATE: 'BIRTH_DATE',
   CONSENTS: 'CONSENTS',
+  PROFILE: 'PROFILE',
+  PHOTOS: 'PHOTOS',
+  PREFERENCES: 'PREFERENCES',
   COMPLETE: 'COMPLETE',
 } as const;
 export type OnboardingStep = (typeof OnboardingStep)[keyof typeof OnboardingStep];

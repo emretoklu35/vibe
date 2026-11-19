@@ -40,6 +40,21 @@ export const envSchema = z
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
     /** SMS sağlayıcısı. Şimdilik yalnızca `console` (kodu loga yazar; production'da yasak). */
     SMS_PROVIDER: z.enum(['console']).default('console'),
+    /** S3 uyumlu nesne depolama. S3_ENDPOINT boşsa AWS S3 kullanılır. */
+    S3_ENDPOINT: z.url({ protocol: /^https?$/ }).optional(),
+    /** İstemcilere verilen presigned URL'lerin adresi (ör. Android emülatörü için 10.0.2.2). Boşsa S3_ENDPOINT. */
+    S3_PUBLIC_ENDPOINT: z.url({ protocol: /^https?$/ }).optional(),
+    S3_REGION: z.string().min(1).default('eu-central-1'),
+    S3_BUCKET: z
+      .string()
+      .regex(/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/, 'geçerli bir bucket adı olmalı'),
+    S3_ACCESS_KEY_ID: z.string().min(1),
+    S3_SECRET_ACCESS_KEY: z.string().min(1),
+    S3_FORCE_PATH_STYLE: booleanString.default(false),
+    /** Yalnızca geliştirme: bucket yoksa açılışta oluşturur ve CORS_ORIGINS için CORS ayarlar. */
+    S3_AUTO_CREATE_BUCKET: booleanString.default(false),
+    /** Fotoğraf denetim sağlayıcısı. Şimdilik yalnızca `dev-auto-approve` (production'da yasak, K8). */
+    MODERATION_PROVIDER: z.enum(['dev-auto-approve']).default('dev-auto-approve'),
     /** Bu sürümün altındaki mobil uygulamalar güncellemeye zorlanır. */
     APP_MIN_VERSION: z
       .string()
@@ -74,6 +89,20 @@ export const envSchema = z
         path: ['SMS_PROVIDER'],
         message:
           "production'da gerçek bir SMS sağlayıcısı gerekir (console yalnızca geliştirme içindir)",
+      });
+    }
+    if (env.NODE_ENV === 'production' && env.MODERATION_PROVIDER === 'dev-auto-approve') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['MODERATION_PROVIDER'],
+        message: "production'da gerçek bir fotoğraf denetim sağlayıcısı gerekir",
+      });
+    }
+    if (env.NODE_ENV === 'production' && env.S3_AUTO_CREATE_BUCKET) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['S3_AUTO_CREATE_BUCKET'],
+        message: "production'da bucket altyapı tarafından oluşturulmalı",
       });
     }
     if (env.NODE_ENV === 'production') {

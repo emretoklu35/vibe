@@ -1,19 +1,25 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
+import { StorageService } from '../../infra/storage/storage.service.js';
+import { userMediaPrefix } from '../media/photos.service.js';
 
 export type PurgeResult = { completed: number; failed: number };
 
 /**
  * Süresi dolan silme taleplerini yerine getirir (worker tarafından periyodik çağrılır).
  * Kullanıcıya ait satırlar FK cascade ile silinir; DataRequest kaydı userId=null olarak uyum kanıtı kalır.
- * Faz 3'te medya (S3) silme adımı buraya eklenecek.
+ * Önce nesne depolamadaki tüm medya silinir; depolama hatasında talep FAILED olur ve DB'ye dokunulmaz
+ * (yetim dosya kalmaz, talep elle yeniden kuyruğa alınabilir).
  */
 @Injectable()
 export class AccountDeletionService {
   private readonly logger = new Logger(AccountDeletionService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   async purgeDue(now = new Date(), batchSize = 50): Promise<PurgeResult> {
     const due = await this.prisma.dataRequest.findMany({
@@ -33,6 +39,7 @@ export class AccountDeletionService {
       if (count !== 1) continue;
 
       try {
+        if (request.userId) await this.storage.removePrefix(userMediaPrefix(request.userId));
         await this.prisma.$transaction([
           ...(request.userId
             ? [

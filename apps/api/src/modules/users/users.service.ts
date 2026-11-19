@@ -61,9 +61,23 @@ export class UsersService {
     };
   }
 
+  /**
+   * Onboarding sırası: doğum tarihi → zorunlu rızalar → profil → en az bir fotoğraf → keşfet tercihleri.
+   * Tercih satırının varlığı, kullanıcının tercih adımını (rıza vermeden geçmiş olsa bile) bitirdiğini gösterir.
+   */
   async onboardingStep(userId: string, hasBirthDate: boolean): Promise<OnboardingStep> {
     if (!hasBirthDate) return OnboardingStep.BIRTH_DATE;
     if (!(await this.consents.hasAllRequired(userId))) return OnboardingStep.CONSENTS;
+    const [profile, photos, preference] = await Promise.all([
+      this.prisma.profile.findUnique({ where: { userId }, select: { userId: true } }),
+      this.prisma.profilePhoto.count({
+        where: { userId, status: { in: ['PROCESSING', 'APPROVED', 'NEEDS_REVIEW'] } },
+      }),
+      this.prisma.preference.findUnique({ where: { userId }, select: { userId: true } }),
+    ]);
+    if (!profile) return OnboardingStep.PROFILE;
+    if (photos === 0) return OnboardingStep.PHOTOS;
+    if (!preference) return OnboardingStep.PREFERENCES;
     return OnboardingStep.COMPLETE;
   }
 

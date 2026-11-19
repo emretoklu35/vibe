@@ -4,6 +4,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from '../../src/app.module.js';
 import { configureApp } from '../../src/bootstrap.js';
 import { SMS_SENDER } from '../../src/modules/auth/sms/sms-sender.js';
+import { MediaProcessingModule } from '../../src/modules/media/media-processing.module.js';
 import { FixturesController } from './fixtures.controller.js';
 import { SmsCapture } from './sms-capture.js';
 
@@ -11,7 +12,8 @@ type Override = { token: unknown; useValue: unknown };
 
 export async function createTestApp(overrides: Override[] = []): Promise<NestExpressApplication> {
   let builder = Test.createTestingModule({
-    imports: [AppModule],
+    // Worker tarafındaki fotoğraf işleme servisi de yüklenir; testler işi kuyruk yerine doğrudan çalıştırır.
+    imports: [AppModule, MediaProcessingModule],
     controllers: [FixturesController],
   });
   // SMS hiçbir testte gerçekten gönderilmez; kodlar SmsCapture'dan okunur.

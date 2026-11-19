@@ -108,8 +108,23 @@ function RootNavigator() {
         <Stack.Screen name="(onboarding)/consents" />
       </Stack.Protected>
 
+      <Stack.Protected guard={step === 'PROFILE'}>
+        <Stack.Screen name="(onboarding)/profile" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={step === 'PHOTOS'}>
+        <Stack.Screen name="(onboarding)/photos" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={step === 'PREFERENCES'}>
+        <Stack.Screen name="(onboarding)/preferences" />
+      </Stack.Protected>
+
       <Stack.Protected guard={step === 'COMPLETE'}>
         <Stack.Screen name="(app)/home" />
+        <Stack.Screen name="(app)/profile-edit" />
+        <Stack.Screen name="(app)/photos" />
+        <Stack.Screen name="(app)/preferences" />
       </Stack.Protected>
 
       <Stack.Screen name="legal/[type]" options={{ presentation: 'modal' }} />

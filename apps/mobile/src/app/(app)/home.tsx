@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -11,14 +13,17 @@ import { Text } from '@/design/components/text';
 import { useTheme } from '@/design/theme';
 import { describeUserAgent, formatDate, formatDateTime } from '@/features/account/format';
 import { describeError } from '@/features/auth/error-message';
+import { usePhotos } from '@/features/photos/photo-manager';
+import { labelOf, RELATIONSHIP_GOAL_OPTIONS } from '@/features/profile/labels';
+import { useMyProfile } from '@/features/profile/queries';
 import { clearLocalSession, signOut } from '@/features/session/session';
 import { useMe } from '@/features/session/use-me';
 
 const sessionsKey = ['sessions'] as const;
 
 /**
- * Onboarding sonrası ilk ekran. Profil ve keşfet sonraki fazlarda eklenecek;
- * şimdilik hesabın gerçek işlevleri burada: oturumlar, çıkış, hesap silme.
+ * Onboarding sonrası ana ekran: profil özeti ve düzenleme, hesap işlemleri.
+ * Keşfet ve eşleşmeler Faz 4'te sekmeli yapıya geçecek.
  */
 export default function HomeScreen() {
   const theme = useTheme();
@@ -31,12 +36,14 @@ export default function HomeScreen() {
       >
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="title" accessibilityRole="header">
-            Hoş geldin
+            Profilin
           </Text>
           <Text variant="body" color="textMuted">
-            Hesabın hazır. Profil oluşturma ve keşfet bir sonraki güncellemeyle gelecek.
+            Keşfet ve eşleşmeler bir sonraki güncellemeyle gelecek.
           </Text>
         </View>
+
+        <ProfileCard age={me.data?.age ?? null} />
 
         <Section title="Hesap">
           <Row label="Yaş" value={me.data?.age != null ? String(me.data.age) : '—'} />
@@ -47,6 +54,63 @@ export default function HomeScreen() {
         <DangerZone />
       </ScrollView>
     </Screen>
+  );
+}
+
+function ProfileCard({ age }: { age: number | null }) {
+  const theme = useTheme();
+  const profile = useMyProfile();
+  const photos = usePhotos();
+  const primary = photos.data?.find((p) => p.position === 0);
+  const p = profile.data?.profile;
+
+  return (
+    <Section title="Profil">
+      <View style={styles.profileRow}>
+        <View
+          style={[
+            styles.avatar,
+            { backgroundColor: theme.colors.surfaceRaised, borderRadius: theme.radii.md },
+          ]}
+        >
+          {primary?.url ? (
+            <Image
+              source={{ uri: primary.url }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              accessibilityLabel="Ana fotoğrafın"
+            />
+          ) : null}
+        </View>
+        <View style={styles.flex}>
+          <Text variant="headline">
+            {p ? `${p.displayName}${age != null ? `, ${age}` : ''}` : '—'}
+          </Text>
+          {p?.cityName ? <Text color="textMuted">{p.cityName}</Text> : null}
+          {p?.relationshipGoal ? (
+            <Text variant="caption" color="accent">
+              {labelOf(RELATIONSHIP_GOAL_OPTIONS, p.relationshipGoal)}
+            </Text>
+          ) : null}
+          {profile.data && profile.data.interests.length > 0 ? (
+            <Text variant="caption" color="textMuted" numberOfLines={2}>
+              {profile.data.interests.map((i) => i.label).join(' · ')}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+      <Button
+        label="Profili düzenle"
+        variant="secondary"
+        onPress={() => router.push('/profile-edit')}
+      />
+      <Button label="Fotoğraflar" variant="ghost" onPress={() => router.push('/photos')} />
+      <Button
+        label="Keşfet tercihleri"
+        variant="ghost"
+        onPress={() => router.push('/preferences')}
+      />
+    </Section>
   );
 }
 
@@ -161,7 +225,9 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
+  flex: { flex: 1, gap: 2 },
+  profileRow: { flexDirection: 'row', gap: 16, alignItems: 'center' },
+  avatar: { width: 84, height: 105, overflow: 'hidden' },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sessionRow: {
     flexDirection: 'row',

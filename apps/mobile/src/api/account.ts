@@ -42,6 +42,10 @@ export async function recordConsents(
   ).data;
 }
 
+export async function getConsents(): Promise<ConsentStatesResponseDto['data']> {
+  return (await authedRequest<ConsentStatesResponseDto>('/privacy/consents')).data;
+}
+
 export async function requestAccountDeletion(): Promise<DeletionResponseDto['data']> {
   return (await authedRequest<DeletionResponseDto>('/users/me', { method: 'DELETE' })).data;
 }
