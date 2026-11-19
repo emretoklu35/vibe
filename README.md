@@ -2,7 +2,7 @@
 
 More than a match. Real chemistry.
 
-Türkiye için premium, yapay zekâ destekli tanışma uygulaması. **Durum: Faz 4 (keşfet, eşleşme, engelleme) tamamlandı.** Yol haritası: [docs/06-YOL-HARITASI.md](docs/06-YOL-HARITASI.md).
+Türkiye için premium, yapay zekâ destekli tanışma uygulaması. **Durum: Faz 5 (sohbet ve bildirimler) tamamlandı.** Yol haritası: [docs/06-YOL-HARITASI.md](docs/06-YOL-HARITASI.md).
 
 ## Gereksinimler
 
@@ -49,7 +49,8 @@ npm run mobile:start
 ```
 
 - Giriş: geliştirmede SMS gönderilmez; doğrulama kodu API'nin terminal logunda `[GELİŞTİRME] ... doğrulama kodu: 123456` olarak görünür.
-- Worker: fotoğrafları işler (EXIF temizleme, denetim) ve hesap silme gibi periyodik işleri çalıştırır. Worker çalışmıyorsa yüklenen fotoğraflar "İşleniyor" durumunda kalır.
+- Worker: fotoğrafları işler (EXIF temizleme, denetim), push bildirimlerini gönderir (geliştirmede loga yazar) ve hesap silme gibi periyodik işleri çalıştırır. Worker çalışmıyorsa yüklenen fotoğraflar "İşleniyor" durumunda kalır.
+- Canlı sohbet: Socket.IO `ws://localhost:3000/ws` (mobil istemci otomatik bağlanır).
 - API: http://localhost:3000/api/v1/health/ready · Swagger UI: http://localhost:3000/api/docs
 - Mobil: Expo CLI'da `i` (iOS), `a` (Android) veya `w` (web). Android emülatöründe `apps/mobile/.env` içindeki `EXPO_PUBLIC_API_URL`'i `http://10.0.2.2:3000` yapın.
 - PostgreSQL `localhost:55432`, Redis `localhost:56379`, S3 (SeaweedFS) `localhost:58333` (diğer projelerle çakışmasın diye standart dışı portlar). Android emülatöründe `apps/api/.env` içindeki `S3_PUBLIC_ENDPOINT`'i `http://10.0.2.2:58333` yapın.

@@ -10,7 +10,7 @@ flowchart TD
   F1 --> F2[Faz 2\nAuth + hesap + rıza ✔]
   F2 --> F3[Faz 3\nProfil + medya + konum ✔]
   F3 --> F4[Faz 4\nKeşfet + eşleşme + engelleme ✔]
-  F4 --> F5[Faz 5\nSohbet + push]
+  F4 --> F5[Faz 5\nSohbet + push ✔]
   F3 --> F6[Faz 6\nGüvenlik + moderasyon + admin]
   F5 --> F6
   F6 --> F7[Faz 7\nLansman hazırlığı]
@@ -79,12 +79,16 @@ flowchart TD
 - **Bulunan ve düzeltilenler:** korumalı rota grubu klasörüne (/(app)) yönlendiriyordu → her gruba açık `redirectTo`; onboarding ve uygulama ekranlarının aynı URL'ye çözülmesi (`setup-*` adlandırması); "Yakınında" gerekçesinin yuvarlanmış mesafeyle çelişmesi (eşik 3 km).
 - **Bilinen sınırlamalar:** Kart kaydırma (swipe) hareketi yok, düğmelerle çalışıyor (erişilebilirlik için de gerekli; hareket sonra eklenebilir). Mobil konum web'de taklit edilerek denendi; gerçek cihazda izin akışı denenmedi. Aday havuzu en yakın/en aktif 200 kişiyle sınırlı (R14 — yük testi Faz 7).
 
-### Faz 5 — Sohbet ve bildirim
+### Faz 5 — Sohbet ve bildirim ✅ (2026-11-19, onay bekliyor)
 
-- Conversation/Participant/Message, REST gönderim, Socket.IO + Redis adapter, okundu bilgisi.
-- `UserDevice` + push kaydı (Faz 2'den), push (FCM/APNs), bildirim tercihleri, uygulama içi bildirimler.
-- Mobil: sohbet listesi, sohbet ekranı, push izin akışı.
-- **Testler:** katılımcı olmayanın erişememesi (REST + socket), engel/unmatch sonrası erişim, mesaj idempotency, sayfalama.
+- Sohbet eşleşmeyle açılır, eşleşme bitince/engellenince iki taraf için kapanır (mesajlar şikayet kanıtı için silinmez). Erişimin tek kaynağı `ConversationParticipant`; yetkisiz her erişim 404.
+- Mesaj: REST ile gönderim (tek doğrulama yolu), istemci UUID'siyle idempotent, dakikada 30 sınırı, boş/2000+ karakter reddi, kendi mesajını silme, okundu bilgisi (yalnızca ileri gider), imleçli sayfalama.
+- Gerçek zamanlı: Socket.IO `/ws`, Redis adapter (çok süreç), kimlik doğrulama bağlantı katmanında (doğrulanmamış istemci olay alamaz), kullanıcı odaları; çıkış/oturum iptalinde socket kesilir.
+- Bildirim: çevrimiçi kullanıcıya push gönderilmez (olay socket'ten gelir); çevrimdışıysa kuyruk → worker → sağlayıcı arayüzü. Bildirimde mesaj metni ve kişi adı yok. Tür bazında tercihler; geçersiz token'lar devre dışı; cihaz kaydı oturuma bağlı (çıkışta silinir), token başka hesaba geçebilir.
+- Push sağlayıcı: arayüz + yalnızca-geliştirme `console` (production'da reddedilir). Gerçek FCM/APNs → açık karar #11 (Firebase + Apple anahtarları gerekir).
+- Mobil: Eşleşmeler sekmesi sohbet listesi (son mesaj, okunmamış rozeti), sohbet ekranı (iyimser gönderim, başarısızda tekrar dene, "Görüldü", geçmiş sayfaları), canlı güncelleme, "Eşleştiniz!" → "Mesaj gönder", bildirim tercihleri ve izin, bildirime dokununca sohbeti açma.
+- **Testler:** API 84 birim + 122 e2e (gerçek Socket.IO istemcisiyle), mobil 29; canlı sohbet, okundu bilgisi ve çevrimdışı push web önizlemede uçtan uca denendi.
+- **Bilinen sınırlamalar:** Push yalnızca geliştirme derlemesi + FCM/APNs anahtarlarıyla çalışır; Expo Go ve web'de çalışmaz, gerçek cihazda denenmedi. Mesaj metin moderasyonu (bağlantı/telefon paylaşımı uyarısı) Faz 6'da.
 
 ### Faz 6 — Güvenlik, moderasyon, admin
 

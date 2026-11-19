@@ -202,7 +202,9 @@ export type ErrorBodyDto = {
     | 'PHOTO_NOT_AWAITING_UPLOAD'
     | 'INVALID_PHOTO_ORDER'
     | 'DISCOVERY_NOT_READY'
-    | 'CANNOT_TARGET_SELF';
+    | 'CANNOT_TARGET_SELF'
+    | 'MESSAGE_ID_CONFLICT'
+    | 'EMPTY_MESSAGE';
   message: string;
   /**
    * Hataya özgü ayrıntılar (ör. alan hataları)
@@ -500,6 +502,10 @@ export type LikeResultDto = {
    */
   matched: boolean;
   matchId: string | null;
+  /**
+   * Eşleşmeyle açılan sohbet
+   */
+  conversationId: string | null;
 };
 
 export type LikeResponseDto = {
@@ -534,11 +540,123 @@ export type MatchesResponseDto = {
 export type MatchDetailDto = {
   matchId: string;
   matchedAt: string;
+  conversationId: string | null;
   profile: ProfileCardDto;
 };
 
 export type MatchDetailResponseDto = {
   data: MatchDetailDto;
+};
+
+export type ConversationUserDto = {
+  userId: string;
+  displayName: string;
+  age: number;
+  photoUrl: string | null;
+};
+
+export type MessageType = 'TEXT' | 'SYSTEM';
+
+export type MessageDto = {
+  id: string;
+  conversationId: string;
+  senderId: string | null;
+  type: MessageType;
+  /**
+   * Silinmiş mesajlarda boş
+   */
+  body: string;
+  createdAt: string;
+  deletedAt: string | null;
+};
+
+export type ConversationDto = {
+  id: string;
+  matchId: string;
+  otherUser: ConversationUserDto;
+  lastMessage: MessageDto | null;
+  unreadCount: number;
+  /**
+   * Karşı tarafın en son okuduğu an ("görüldü" için)
+   */
+  otherLastReadAt: string | null;
+  createdAt: string;
+};
+
+export type PageMetaDto = {
+  nextCursor: string | null;
+};
+
+export type ConversationsResponseDto = {
+  data: Array<ConversationDto>;
+  meta: PageMetaDto;
+};
+
+export type ConversationResponseDto = {
+  data: ConversationDto;
+};
+
+export type MessagesResponseDto = {
+  /**
+   * En yeni önce
+   */
+  data: Array<MessageDto>;
+  meta: PageMetaDto;
+};
+
+export type SendMessageDto = {
+  /**
+   * İstemcinin ürettiği kimlik; tekrar gönderimde aynı mesaj döner
+   */
+  id: string;
+  body: string;
+};
+
+export type MessageResponseDto = {
+  data: MessageDto;
+};
+
+export type MarkReadDto = {
+  /**
+   * Okunan en son mesaj
+   */
+  lastReadMessageId: string;
+};
+
+export type Platform = 'IOS' | 'ANDROID';
+
+export type RegisterDeviceDto = {
+  platform: Platform;
+  /**
+   * Yerel FCM (Android) veya APNs (iOS) token
+   */
+  pushToken: string;
+  appVersion?: string;
+  locale?: string;
+};
+
+export type DeviceDto = {
+  id: string;
+  platform: Platform;
+};
+
+export type DeviceResponseDto = {
+  data: DeviceDto;
+};
+
+export type NotificationSettingsDto = {
+  /**
+   * Yeni eşleşme bildirimi
+   */
+  newMatch: boolean;
+  /**
+   * Yeni mesaj bildirimi
+   */
+  newMessage: boolean;
+};
+
+export type NotificationSettingsResponseDto = {
+  data: NotificationSettingsDto;
 };
 
 export type BlockUserDto = {
@@ -1064,6 +1182,163 @@ export type MatchingControllerDetailV1Responses = {
 
 export type MatchingControllerDetailV1Response =
   MatchingControllerDetailV1Responses[keyof MatchingControllerDetailV1Responses];
+
+export type ChatControllerListV1Data = {
+  body?: never;
+  path?: never;
+  query?: {
+    cursor?: string;
+  };
+  url: '/api/v1/conversations';
+};
+
+export type ChatControllerListV1Responses = {
+  200: ConversationsResponseDto;
+};
+
+export type ChatControllerListV1Response =
+  ChatControllerListV1Responses[keyof ChatControllerListV1Responses];
+
+export type ChatControllerGetV1Data = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/conversations/{id}';
+};
+
+export type ChatControllerGetV1Responses = {
+  200: ConversationResponseDto;
+};
+
+export type ChatControllerGetV1Response =
+  ChatControllerGetV1Responses[keyof ChatControllerGetV1Responses];
+
+export type ChatControllerMessagesV1Data = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: {
+    cursor?: string;
+  };
+  url: '/api/v1/conversations/{id}/messages';
+};
+
+export type ChatControllerMessagesV1Responses = {
+  200: MessagesResponseDto;
+};
+
+export type ChatControllerMessagesV1Response =
+  ChatControllerMessagesV1Responses[keyof ChatControllerMessagesV1Responses];
+
+export type ChatControllerSendV1Data = {
+  body: SendMessageDto;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/conversations/{id}/messages';
+};
+
+export type ChatControllerSendV1Responses = {
+  201: MessageResponseDto;
+};
+
+export type ChatControllerSendV1Response =
+  ChatControllerSendV1Responses[keyof ChatControllerSendV1Responses];
+
+export type ChatControllerReadV1Data = {
+  body: MarkReadDto;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/conversations/{id}/read';
+};
+
+export type ChatControllerReadV1Responses = {
+  204: void;
+};
+
+export type ChatControllerReadV1Response =
+  ChatControllerReadV1Responses[keyof ChatControllerReadV1Responses];
+
+export type ChatControllerRemoveV1Data = {
+  body?: never;
+  path: {
+    id: string;
+    messageId: string;
+  };
+  query?: never;
+  url: '/api/v1/conversations/{id}/messages/{messageId}';
+};
+
+export type ChatControllerRemoveV1Responses = {
+  204: void;
+};
+
+export type ChatControllerRemoveV1Response =
+  ChatControllerRemoveV1Responses[keyof ChatControllerRemoveV1Responses];
+
+export type NotificationsControllerRegisterV1Data = {
+  body: RegisterDeviceDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/devices';
+};
+
+export type NotificationsControllerRegisterV1Responses = {
+  200: DeviceResponseDto;
+};
+
+export type NotificationsControllerRegisterV1Response =
+  NotificationsControllerRegisterV1Responses[keyof NotificationsControllerRegisterV1Responses];
+
+export type NotificationsControllerRemoveV1Data = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/devices/{id}';
+};
+
+export type NotificationsControllerRemoveV1Responses = {
+  204: void;
+};
+
+export type NotificationsControllerRemoveV1Response =
+  NotificationsControllerRemoveV1Responses[keyof NotificationsControllerRemoveV1Responses];
+
+export type NotificationsControllerSettingsV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/notifications/settings';
+};
+
+export type NotificationsControllerSettingsV1Responses = {
+  200: NotificationSettingsResponseDto;
+};
+
+export type NotificationsControllerSettingsV1Response =
+  NotificationsControllerSettingsV1Responses[keyof NotificationsControllerSettingsV1Responses];
+
+export type NotificationsControllerSetSettingsV1Data = {
+  body: NotificationSettingsDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/notifications/settings';
+};
+
+export type NotificationsControllerSetSettingsV1Responses = {
+  200: NotificationSettingsResponseDto;
+};
+
+export type NotificationsControllerSetSettingsV1Response =
+  NotificationsControllerSetSettingsV1Responses[keyof NotificationsControllerSetSettingsV1Responses];
 
 export type BlocksControllerListV1Data = {
   body?: never;

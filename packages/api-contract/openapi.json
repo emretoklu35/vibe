@@ -965,6 +965,351 @@
         "tags": ["matching"]
       }
     },
+    "/api/v1/conversations": {
+      "get": {
+        "operationId": "ChatController_list_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sohbetler (son mesaja göre, okunmamış sayısıyla)",
+        "tags": ["chat"]
+      }
+    },
+    "/api/v1/conversations/{id}": {
+      "get": {
+        "operationId": "ChatController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Tek sohbet",
+        "tags": ["chat"]
+      }
+    },
+    "/api/v1/conversations/{id}/messages": {
+      "get": {
+        "operationId": "ChatController_messages_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mesajlar (en yeni önce, sayfalı)",
+        "tags": ["chat"]
+      },
+      "post": {
+        "description": "İstemci kimliği (id) ile idempotenttir. Alıcı çevrimdışıysa metin içermeyen bir push gönderilir.",
+        "operationId": "ChatController_send_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mesaj gönder",
+        "tags": ["chat"]
+      }
+    },
+    "/api/v1/conversations/{id}/read": {
+      "post": {
+        "operationId": "ChatController_read_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkReadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Okundu bilgisi",
+        "tags": ["chat"]
+      }
+    },
+    "/api/v1/conversations/{id}/messages/{messageId}": {
+      "delete": {
+        "operationId": "ChatController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Kendi mesajını sil (iki taraftan da kalkar)",
+        "tags": ["chat"]
+      }
+    },
+    "/api/v1/devices": {
+      "post": {
+        "operationId": "NotificationsController_register_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Push bildirimi için cihazı kaydet (oturuma bağlı; çıkışta silinir)",
+        "tags": ["notifications"]
+      }
+    },
+    "/api/v1/devices/{id}": {
+      "delete": {
+        "operationId": "NotificationsController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cihaz kaydını sil",
+        "tags": ["notifications"]
+      }
+    },
+    "/api/v1/notifications/settings": {
+      "get": {
+        "operationId": "NotificationsController_settings_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bildirim tercihleri",
+        "tags": ["notifications"]
+      },
+      "put": {
+        "operationId": "NotificationsController_setSettings_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationSettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bildirim tercihlerini kaydet",
+        "tags": ["notifications"]
+      }
+    },
     "/api/v1/safety/blocks": {
       "post": {
         "operationId": "BlocksController_block_v1",
@@ -1533,7 +1878,9 @@
               "PHOTO_NOT_AWAITING_UPLOAD",
               "INVALID_PHOTO_ORDER",
               "DISCOVERY_NOT_READY",
-              "CANNOT_TARGET_SELF"
+              "CANNOT_TARGET_SELF",
+              "MESSAGE_ID_CONFLICT",
+              "EMPTY_MESSAGE"
             ],
             "example": "VALIDATION_FAILED"
           },
@@ -2400,9 +2747,15 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Eşleşmeyle açılan sohbet"
           }
         },
-        "required": ["matched", "matchId"]
+        "required": ["matched", "matchId", "conversationId"]
       },
       "LikeResponseDto": {
         "type": "object",
@@ -2487,17 +2840,294 @@
             "type": "string",
             "format": "date-time"
           },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
           "profile": {
             "$ref": "#/components/schemas/ProfileCardDto"
           }
         },
-        "required": ["matchId", "matchedAt", "profile"]
+        "required": ["matchId", "matchedAt", "conversationId", "profile"]
       },
       "MatchDetailResponseDto": {
         "type": "object",
         "properties": {
           "data": {
             "$ref": "#/components/schemas/MatchDetailDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "ConversationUserDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "age": {
+            "type": "number"
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": ["userId", "displayName", "age", "photoUrl"]
+      },
+      "MessageType": {
+        "type": "string",
+        "enum": ["TEXT", "SYSTEM"]
+      },
+      "MessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "senderId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MessageType"
+              }
+            ]
+          },
+          "body": {
+            "type": "string",
+            "description": "Silinmiş mesajlarda boş"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": ["id", "conversationId", "senderId", "type", "body", "createdAt", "deletedAt"]
+      },
+      "ConversationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "matchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "otherUser": {
+            "$ref": "#/components/schemas/ConversationUserDto"
+          },
+          "lastMessage": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MessageDto"
+              }
+            ]
+          },
+          "unreadCount": {
+            "type": "number"
+          },
+          "otherLastReadAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Karşı tarafın en son okuduğu an (\"görüldü\" için)"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "matchId",
+          "otherUser",
+          "lastMessage",
+          "unreadCount",
+          "otherLastReadAt",
+          "createdAt"
+        ]
+      },
+      "PageMetaDto": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": ["nextCursor"]
+      },
+      "ConversationsResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConversationDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMetaDto"
+          }
+        },
+        "required": ["data", "meta"]
+      },
+      "ConversationResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ConversationDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "MessagesResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "description": "En yeni önce",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessageDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMetaDto"
+          }
+        },
+        "required": ["data", "meta"]
+      },
+      "SendMessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "İstemcinin ürettiği kimlik; tekrar gönderimde aynı mesaj döner"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["id", "body"]
+      },
+      "MessageResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MessageDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "MarkReadDto": {
+        "type": "object",
+        "properties": {
+          "lastReadMessageId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Okunan en son mesaj"
+          }
+        },
+        "required": ["lastReadMessageId"]
+      },
+      "Platform": {
+        "type": "string",
+        "enum": ["IOS", "ANDROID"]
+      },
+      "RegisterDeviceDto": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Platform"
+              }
+            ]
+          },
+          "pushToken": {
+            "type": "string",
+            "description": "Yerel FCM (Android) veya APNs (iOS) token"
+          },
+          "appVersion": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string",
+            "example": "tr-TR"
+          }
+        },
+        "required": ["platform", "pushToken"]
+      },
+      "DeviceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "platform": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Platform"
+              }
+            ]
+          }
+        },
+        "required": ["id", "platform"]
+      },
+      "DeviceResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DeviceDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "NotificationSettingsDto": {
+        "type": "object",
+        "properties": {
+          "newMatch": {
+            "type": "boolean",
+            "description": "Yeni eşleşme bildirimi"
+          },
+          "newMessage": {
+            "type": "boolean",
+            "description": "Yeni mesaj bildirimi"
+          }
+        },
+        "required": ["newMatch", "newMessage"]
+      },
+      "NotificationSettingsResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/NotificationSettingsDto"
           }
         },
         "required": ["data"]

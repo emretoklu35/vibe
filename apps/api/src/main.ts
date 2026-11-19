@@ -10,5 +10,5 @@ import { loadEnvFile } from './config/load-env-file.js';
 loadEnvFile();
 
 const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
-const config = configureApp(app);
+const config = await configureApp(app);
 await app.listen(config.PORT, config.HOST);

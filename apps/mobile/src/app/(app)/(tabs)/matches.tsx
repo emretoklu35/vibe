@@ -1,4 +1,4 @@
-import type { MatchSummaryDto } from '@vibe/api-contract';
+import type { ConversationDto } from '@vibe/api-contract';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-import { listMatches } from '@/api/discovery';
+import { listConversations } from '@/api/chat';
 import { Button } from '@/design/components/button';
 import { Notice } from '@/design/components/notice';
 import { Screen } from '@/design/components/screen';
@@ -19,23 +19,25 @@ import { Text } from '@/design/components/text';
 import { useTheme } from '@/design/theme';
 import { formatDate } from '@/features/account/format';
 import { describeError } from '@/features/auth/error-message';
-import { matchesKey } from '@/features/discovery/query-keys';
+import { conversationsKey } from '@/features/chat/cache';
+import { useMe } from '@/features/session/use-me';
 
+/** Her eşleşmenin bir sohbeti vardır; bu sekme sohbetleri son mesaja göre listeler. */
 export default function MatchesScreen() {
   const theme = useTheme();
-  const matches = useInfiniteQuery({
-    queryKey: matchesKey,
-    queryFn: ({ pageParam }) => listMatches(pageParam),
+  const conversations = useInfiniteQuery({
+    queryKey: conversationsKey,
+    queryFn: ({ pageParam }) => listConversations(pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.meta.nextCursor ?? undefined,
   });
-  const items = matches.data?.pages.flatMap((p) => p.data) ?? [];
+  const items = conversations.data?.pages.flatMap((p) => p.data) ?? [];
 
   return (
     <Screen>
       <FlatList
         data={items}
-        keyExtractor={(m) => m.matchId}
+        keyExtractor={(c) => c.id}
         contentContainerStyle={{
           paddingVertical: theme.spacing.xxl,
           gap: theme.spacing.md,
@@ -50,22 +52,23 @@ export default function MatchesScreen() {
             Eşleşmeler
           </Text>
         }
-        renderItem={({ item }) => <MatchRow match={item} />}
+        renderItem={({ item }) => <ConversationRow conversation={item} />}
         onEndReached={() => {
-          if (matches.hasNextPage && !matches.isFetchingNextPage) void matches.fetchNextPage();
+          if (conversations.hasNextPage && !conversations.isFetchingNextPage)
+            void conversations.fetchNextPage();
         }}
         refreshControl={
           <RefreshControl
-            refreshing={matches.isRefetching}
-            onRefresh={() => void matches.refetch()}
+            refreshing={conversations.isRefetching}
+            onRefresh={() => void conversations.refetch()}
             tintColor={theme.colors.accent}
           />
         }
         ListEmptyComponent={
-          matches.isPending ? (
+          conversations.isPending ? (
             <ActivityIndicator />
-          ) : matches.isError ? (
-            <Notice message={describeError(matches.error)} />
+          ) : conversations.isError ? (
+            <Notice message={describeError(conversations.error)} />
           ) : (
             <View style={{ gap: theme.spacing.md, paddingTop: theme.spacing.xl }}>
               <Text variant="headline">Henüz eşleşmen yok</Text>
@@ -80,19 +83,27 @@ export default function MatchesScreen() {
             </View>
           )
         }
-        ListFooterComponent={matches.isFetchingNextPage ? <ActivityIndicator /> : undefined}
+        ListFooterComponent={conversations.isFetchingNextPage ? <ActivityIndicator /> : undefined}
       />
     </Screen>
   );
 }
 
-function MatchRow({ match }: { match: MatchSummaryDto }) {
+function ConversationRow({ conversation }: { conversation: ConversationDto }) {
   const theme = useTheme();
+  const me = useMe();
+  const { otherUser, lastMessage, unreadCount } = conversation;
+  const preview = lastMessage
+    ? lastMessage.deletedAt
+      ? 'Bu mesaj silindi'
+      : `${lastMessage.senderId === me.data?.id ? 'Sen: ' : ''}${lastMessage.body}`
+    : `${formatDate(conversation.createdAt)} tarihinde eşleştiniz · ilk mesajı gönder`;
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${match.user.displayName}, ${match.user.age}. Eşleşmeyi aç`}
-      onPress={() => router.push({ pathname: '/match/[id]', params: { id: match.matchId } })}
+      accessibilityLabel={`${otherUser.displayName}${unreadCount > 0 ? `, ${unreadCount} okunmamış mesaj` : ''}`}
+      onPress={() => router.push({ pathname: '/chat/[id]', params: { id: conversation.id } })}
       style={({ pressed }) => [
         styles.row,
         {
@@ -103,9 +114,9 @@ function MatchRow({ match }: { match: MatchSummaryDto }) {
       ]}
     >
       <View style={[styles.avatar, { backgroundColor: theme.colors.surfaceRaised }]}>
-        {match.user.photoUrl ? (
+        {otherUser.photoUrl ? (
           <Image
-            source={{ uri: match.user.photoUrl }}
+            source={{ uri: otherUser.photoUrl }}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
           />
@@ -113,12 +124,19 @@ function MatchRow({ match }: { match: MatchSummaryDto }) {
       </View>
       <View style={styles.flex}>
         <Text variant="headline">
-          {match.user.displayName}, {match.user.age}
+          {otherUser.displayName}, {otherUser.age}
         </Text>
-        <Text variant="caption" color="textMuted">
-          {formatDate(match.matchedAt)} tarihinde eşleştiniz
+        <Text variant="caption" color={unreadCount > 0 ? 'text' : 'textMuted'} numberOfLines={1}>
+          {preview}
         </Text>
       </View>
+      {unreadCount > 0 ? (
+        <View style={[styles.badge, { backgroundColor: theme.colors.accent }]}>
+          <Text variant="caption" color="onAccent">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -127,4 +145,12 @@ const styles = StyleSheet.create({
   flex: { flex: 1, gap: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12 },
   avatar: { width: 60, height: 60, borderRadius: 30, overflow: 'hidden' },
+  badge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
 });

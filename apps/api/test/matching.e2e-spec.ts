@@ -42,7 +42,7 @@ describe('Eşleşme: beğeni, eşleşme, eşleşmeyi bitirme, engelleme', () => 
   it('tek yönlü beğeni eşleşme değildir; karşılıklıda tek bir eşleşme oluşur', async () => {
     const [a, b] = await pair();
     const first = await like(a, b).expect(200);
-    expect(first.body.data).toEqual({ matched: false, matchId: null });
+    expect(first.body.data).toEqual({ matched: false, matchId: null, conversationId: null });
     expect(await candidateIds(app, a)).toEqual([]);
 
     const second = await like(b, a).expect(200);
@@ -51,7 +51,12 @@ describe('Eşleşme: beğeni, eşleşme, eşleşmeyi bitirme, engelleme', () => 
 
     // Tekrar beğenmek idempotent: yeni kayıt yok, aynı eşleşme döner
     const again = await like(a, b).expect(200);
-    expect(again.body.data).toEqual({ matched: true, matchId: second.body.data.matchId });
+    expect(again.body.data).toEqual({
+      matched: true,
+      matchId: second.body.data.matchId,
+      conversationId: second.body.data.conversationId,
+    });
+    expect(second.body.data.conversationId).toEqual(expect.any(String));
     expect(await prisma.like.count()).toBe(2);
     expect(await prisma.match.count()).toBe(1);
 
@@ -124,7 +129,11 @@ describe('Eşleşme: beğeni, eşleşme, eşleşmeyi bitirme, engelleme', () => 
     ).toEqual([]);
     await request(server).get(`/api/v1/matches/${matchId}`).set(a.auth).expect(404);
     expect(await candidateIds(app, a)).toEqual([]);
-    expect((await like(a, b).expect(200)).body.data).toEqual({ matched: false, matchId: null });
+    expect((await like(a, b).expect(200)).body.data).toEqual({
+      matched: false,
+      matchId: null,
+      conversationId: null,
+    });
   });
 
   it('engelleme: eşleşme biter, beğeni yapılamaz; engel kalkınca eşleşme geri gelmez', async () => {

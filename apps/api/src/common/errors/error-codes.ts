@@ -51,6 +51,10 @@ export const ErrorCode = {
   // Keşfet ve eşleşme
   DISCOVERY_NOT_READY: 'DISCOVERY_NOT_READY',
   CANNOT_TARGET_SELF: 'CANNOT_TARGET_SELF',
+
+  // Sohbet
+  MESSAGE_ID_CONFLICT: 'MESSAGE_ID_CONFLICT',
+  EMPTY_MESSAGE: 'EMPTY_MESSAGE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

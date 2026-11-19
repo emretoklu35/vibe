@@ -13,6 +13,7 @@ import { Text } from '@/design/components/text';
 import { useTheme } from '@/design/theme';
 import { describeUserAgent, formatDate, formatDateTime } from '@/features/account/format';
 import { describeError } from '@/features/auth/error-message';
+import { NotificationSettingsSection } from '@/features/notifications/notification-settings';
 import { usePhotos } from '@/features/photos/photo-manager';
 import { labelOf, RELATIONSHIP_GOAL_OPTIONS } from '@/features/profile/labels';
 import { useMyProfile } from '@/features/profile/queries';
@@ -44,6 +45,10 @@ export default function ProfileTabScreen() {
         <Section title="Hesap">
           <Row label="Yaş" value={me.data?.age != null ? String(me.data.age) : '—'} />
           <Row label="Üyelik" value={me.data ? formatDate(me.data.createdAt) : '—'} />
+        </Section>
+
+        <Section title="Bildirimler">
+          <NotificationSettingsSection />
         </Section>
 
         <SessionsSection />

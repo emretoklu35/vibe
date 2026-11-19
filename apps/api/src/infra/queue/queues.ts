@@ -6,3 +6,13 @@ export type ProcessPhotoJob = { photoId: string };
 export const MAINTENANCE_QUEUE = 'maintenance';
 export const PURGE_DELETED_ACCOUNTS = 'purge-deleted-accounts';
 export const CLEANUP_STALE_UPLOADS = 'cleanup-stale-uploads';
+
+export const NOTIFICATIONS_QUEUE = 'notifications';
+export const SEND_PUSH = 'send-push';
+export type PushKind = 'NEW_MATCH' | 'NEW_MESSAGE';
+export type SendPushJob = {
+  userId: string;
+  kind: PushKind;
+  conversationId?: string;
+  matchId?: string;
+};

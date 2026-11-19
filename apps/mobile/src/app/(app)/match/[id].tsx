@@ -12,6 +12,7 @@ import { useTheme } from '@/design/theme';
 import { formatDate } from '@/features/account/format';
 import { describeError } from '@/features/auth/error-message';
 import { CardDetails, CardHero } from '@/features/discovery/profile-card';
+import { conversationsKey } from '@/features/chat/cache';
 import { matchesKey, matchKey } from '@/features/discovery/query-keys';
 import { LoadingView } from '@/features/session/status-views';
 
@@ -26,6 +27,7 @@ export default function MatchScreen() {
 
   const done = async () => {
     await queryClient.invalidateQueries({ queryKey: matchesKey });
+    await queryClient.invalidateQueries({ queryKey: conversationsKey });
     router.back();
   };
   const end = useMutation({ mutationFn: () => unmatch(id), onSuccess: done });
@@ -45,6 +47,7 @@ export default function MatchScreen() {
   }
 
   const { profile, matchedAt } = match.data;
+  // Eşleşme bitince sohbet de kapanır; sohbet listesi de yenilenir.
   const error = end.error ?? block.error;
 
   return (

@@ -4,7 +4,11 @@ import { AppException } from '../../common/errors/app.exception.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
 import { StorageService } from '../../infra/storage/storage.service.js';
+import { ChatService } from '../chat/chat.service.js';
 import { DiscoveryService } from '../discovery/discovery.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
+import { RealtimeEvent } from '../realtime/realtime.events.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import { ageOn, toCalendarDate, todayInTurkey } from '../users/age.js';
 import type { LikeResultDto, MatchDetailDto, MatchSummaryDto } from './dto/matching.dto.js';
 
@@ -26,6 +30,9 @@ export class MatchingService {
     private readonly prisma: PrismaService,
     private readonly discovery: DiscoveryService,
     private readonly storage: StorageService,
+    private readonly chat: ChatService,
+    private readonly realtime: RealtimeService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -47,31 +54,57 @@ export class MatchingService {
     if (!(await this.discovery.isVisibleTo(viewer, targetId))) throw notFound();
 
     const pair = orderedPair(viewerId, targetId);
-    return this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`match:${pair.userAId}:${pair.userBId}`}, 0))`;
+    const result = await this.prisma.$transaction(
+      async (tx): Promise<LikeResultDto & { created?: boolean }> => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`match:${pair.userAId}:${pair.userBId}`}, 0))`;
 
-      await tx.like.upsert({
-        where: { actorId_targetId: { actorId: viewerId, targetId } },
-        create: { actorId: viewerId, targetId },
-        update: {},
+        await tx.like.upsert({
+          where: { actorId_targetId: { actorId: viewerId, targetId } },
+          create: { actorId: viewerId, targetId },
+          update: {},
+        });
+        await tx.pass.deleteMany({ where: { actorId: viewerId, targetId } });
+
+        const existing = await tx.match.findUnique({ where: { userAId_userBId: pair } });
+        if (existing) {
+          if (existing.status !== 'ACTIVE')
+            return { matched: false, matchId: null, conversationId: null };
+          const conversation = await tx.conversation.findUnique({
+            where: { matchId: existing.id },
+            select: { id: true },
+          });
+          return { matched: true, matchId: existing.id, conversationId: conversation?.id ?? null };
+        }
+
+        const reciprocal = await tx.like.findUnique({
+          where: { actorId_targetId: { actorId: targetId, targetId: viewerId } },
+        });
+        if (!reciprocal) return { matched: false, matchId: null, conversationId: null };
+
+        const match = await tx.match.create({ data: pair });
+        const conversationId = await this.chat.openForMatch(tx, match.id, [
+          pair.userAId,
+          pair.userBId,
+        ]);
+        return { matched: true, matchId: match.id, conversationId, created: true };
+      },
+    );
+
+    const { created, ...response } = result;
+    if (created && response.matchId) {
+      // İşlem tamamlandıktan sonra: iki tarafa canlı olay, çevrimdışı olan karşı tarafa push.
+      this.realtime.emitToUsers([viewerId, targetId], RealtimeEvent.MATCH_NEW, {
+        matchId: response.matchId,
+        conversationId: response.conversationId,
       });
-      await tx.pass.deleteMany({ where: { actorId: viewerId, targetId } });
-
-      const existing = await tx.match.findUnique({ where: { userAId_userBId: pair } });
-      if (existing) {
-        return existing.status === 'ACTIVE'
-          ? { matched: true, matchId: existing.id }
-          : { matched: false, matchId: null };
-      }
-
-      const reciprocal = await tx.like.findUnique({
-        where: { actorId_targetId: { actorId: targetId, targetId: viewerId } },
+      await this.notifications.notify({
+        userId: targetId,
+        kind: 'NEW_MATCH',
+        matchId: response.matchId,
+        conversationId: response.conversationId ?? undefined,
       });
-      if (!reciprocal) return { matched: false, matchId: null };
-
-      const match = await tx.match.create({ data: pair });
-      return { matched: true, matchId: match.id };
-    });
+    }
+    return response;
   }
 
   async pass(viewerId: string, targetId: string): Promise<void> {
@@ -144,18 +177,35 @@ export class MatchingService {
     const match = await this.findActive(viewerId, matchId);
     const otherId = match.userAId === viewerId ? match.userBId : match.userAId;
     const profile = await this.discovery.matchCard(viewerId, otherId);
-    if (!profile)
+    if (!profile) {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, 'Eşleşme bulunamadı');
-    return { matchId: match.id, matchedAt: match.createdAt, profile };
+    }
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { matchId: match.id },
+      select: { id: true },
+    });
+    return {
+      matchId: match.id,
+      matchedAt: match.createdAt,
+      conversationId: conversation?.id ?? null,
+      profile,
+    };
   }
 
+  /** Eşleşmeyi bitirir; sohbet iki taraf için de kapanır (mesajlar şikayet kanıtı için silinmez). */
   async unmatch(viewerId: string, matchId: string): Promise<void> {
-    const { count } = await this.prisma.match.updateMany({
-      where: { id: matchId, status: 'ACTIVE', OR: [{ userAId: viewerId }, { userBId: viewerId }] },
-      data: { status: 'UNMATCHED', unmatchedById: viewerId, unmatchedAt: new Date() },
+    const match = await this.findActive(viewerId, matchId);
+    const conversationId = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.match.updateMany({
+        where: { id: match.id, status: 'ACTIVE' },
+        data: { status: 'UNMATCHED', unmatchedById: viewerId, unmatchedAt: new Date() },
+      });
+      if (count === 0) {
+        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, 'Eşleşme bulunamadı');
+      }
+      return this.chat.closeForMatch(tx, match.id);
     });
-    if (count === 0)
-      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, 'Eşleşme bulunamadı');
+    if (conversationId) this.chat.emitClosed(conversationId, [match.userAId, match.userBId]);
   }
 
   private async findActive(viewerId: string, matchId: string) {

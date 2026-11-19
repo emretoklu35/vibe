@@ -4,21 +4,19 @@ import type { Request } from 'express';
 
 import { AppException } from '../../common/errors/app.exception.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
-import { PrismaService } from '../../infra/prisma/prisma.service.js';
 import { ALLOW_DELETION_PENDING, IS_PUBLIC } from './auth.decorators.js';
-import { TokensService } from './tokens.service.js';
+import { AccessAuthenticator } from './access-authenticator.js';
 
 /**
  * Global guard: her uç varsayılan olarak korumalıdır (@Public ile açılır).
- * JWT doğrulandıktan sonra oturumun iptal edilmediği ve hesabın durumu DB'den kontrol edilir;
- * böylece çıkış, ban ve silme talebi access token süresini beklemeden etkili olur.
+ * Doğrulama AccessAuthenticator'dadır (WebSocket ile ortak): oturum ve hesap durumu DB'den kontrol
+ * edilir; böylece çıkış, ban ve silme talebi access token süresini beklemeden etkili olur.
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly tokens: TokensService,
-    private readonly prisma: PrismaService,
+    private readonly authenticator: AccessAuthenticator,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -32,46 +30,9 @@ export class AuthGuard implements CanActivate {
       throw new AppException(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED, 'Giriş gerekli');
     }
 
-    const claims = await this.tokens.verifyAccessToken(token);
-    const session = await this.prisma.session.findUnique({
-      where: { id: claims.sessionId },
-      select: {
-        userId: true,
-        revokedAt: true,
-        expiresAt: true,
-        user: { select: { status: true, suspendedUntil: true } },
-      },
-    });
-
+    const access = await this.authenticator.authenticate(token);
     if (
-      !session ||
-      session.userId !== claims.userId ||
-      session.revokedAt ||
-      session.expiresAt <= new Date()
-    ) {
-      throw new AppException(
-        HttpStatus.UNAUTHORIZED,
-        ErrorCode.SESSION_REVOKED,
-        'Oturum sonlandırılmış',
-      );
-    }
-
-    const { status, suspendedUntil } = session.user;
-    if (status === 'BANNED') {
-      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ACCOUNT_BANNED, 'Hesap kapatıldı');
-    }
-    if (status === 'SUSPENDED' && (!suspendedUntil || suspendedUntil > new Date())) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.ACCOUNT_SUSPENDED,
-        'Hesap geçici olarak askıya alındı',
-        {
-          suspendedUntil,
-        },
-      );
-    }
-    if (
-      status === 'DELETION_PENDING' &&
+      access.deletionPending &&
       !this.reflector.getAllAndOverride<boolean>(ALLOW_DELETION_PENDING, targets)
     ) {
       throw new AppException(
@@ -81,7 +42,7 @@ export class AuthGuard implements CanActivate {
       );
     }
 
-    request.auth = { userId: claims.userId, sessionId: claims.sessionId };
+    request.auth = { userId: access.userId, sessionId: access.sessionId };
     return true;
   }
 }

@@ -12,6 +12,7 @@ import { Screen } from '@/design/components/screen';
 import { Text } from '@/design/components/text';
 import { useTheme } from '@/design/theme';
 import { describeError } from '@/features/auth/error-message';
+import { conversationsKey } from '@/features/chat/cache';
 import { CardDetails, CardHero } from '@/features/discovery/profile-card';
 import { candidatesKey, discoveryStatusKey, matchesKey } from '@/features/discovery/query-keys';
 import {
@@ -164,9 +165,11 @@ function CandidateDeck() {
   const theme = useTheme();
   const queryClient = useQueryClient();
   const candidates = useQuery({ queryKey: candidatesKey, queryFn: () => getCandidates(10) });
-  const [matchedWith, setMatchedWith] = useState<{ card: ProfileCardDto; matchId: string } | null>(
-    null,
-  );
+  const [matchedWith, setMatchedWith] = useState<{
+    card: ProfileCardDto;
+    matchId: string;
+    conversationId: string | null;
+  } | null>(null);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const current = candidates.data?.[0];
 
@@ -182,8 +185,9 @@ function CandidateDeck() {
     mutationFn: (card: ProfileCardDto) => likeUser(card.userId),
     onSuccess: (result, card) => {
       if (result.matched && result.matchId) {
-        setMatchedWith({ card, matchId: result.matchId });
+        setMatchedWith({ card, matchId: result.matchId, conversationId: result.conversationId });
         void queryClient.invalidateQueries({ queryKey: matchesKey });
+        void queryClient.invalidateQueries({ queryKey: conversationsKey });
       }
       advance();
     },
@@ -210,11 +214,13 @@ function CandidateDeck() {
         </Text>
         <View style={{ alignSelf: 'stretch', gap: theme.spacing.md }}>
           <Button
-            label="Eşleşmeyi gör"
+            label="Mesaj gönder"
             onPress={() => {
-              const id = matchedWith.matchId;
+              const { matchId, conversationId } = matchedWith;
               setMatchedWith(null);
-              router.push({ pathname: '/match/[id]', params: { id } });
+              if (conversationId)
+                router.push({ pathname: '/chat/[id]', params: { id: conversationId } });
+              else router.push({ pathname: '/match/[id]', params: { id: matchId } });
             }}
           />
           <Button

@@ -1,10 +1,11 @@
-import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger, Optional } from '@nestjs/common';
 
 import { AppException } from '../../common/errors/app.exception.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 import { APP_CONFIG } from '../../config/config.module.js';
 import type { AppConfig } from '../../config/env.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import { TokensService } from './tokens.service.js';
 
 export type TokenPair = {
@@ -28,6 +29,8 @@ export class SessionsService {
     private readonly prisma: PrismaService,
     private readonly tokens: TokensService,
     @Inject(APP_CONFIG) config: AppConfig,
+    // Worker gibi WebSocket'siz süreçlerde yoktur.
+    @Optional() private readonly realtime?: RealtimeService,
   ) {
     this.refreshTtlMs = config.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
   }
@@ -106,19 +109,28 @@ export class SessionsService {
     };
   }
 
+  /** Oturumu kapatır; o oturumdan kayıtlı push cihazı silinir, açık socket'leri kesilir. */
   async revoke(sessionId: string, userId: string, reason: RevokeReason): Promise<boolean> {
-    const { count } = await this.prisma.session.updateMany({
-      where: { id: sessionId, userId, revokedAt: null },
-      data: { revokedAt: new Date(), revokedReason: reason },
-    });
+    const [{ count }] = await this.prisma.$transaction([
+      this.prisma.session.updateMany({
+        where: { id: sessionId, userId, revokedAt: null },
+        data: { revokedAt: new Date(), revokedReason: reason },
+      }),
+      this.prisma.userDevice.deleteMany({ where: { sessionId, userId } }),
+    ]);
+    this.realtime?.disconnectSession(sessionId);
     return count === 1;
   }
 
   async revokeAll(userId: string, reason: RevokeReason): Promise<number> {
-    const { count } = await this.prisma.session.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date(), revokedReason: reason },
-    });
+    const [{ count }] = await this.prisma.$transaction([
+      this.prisma.session.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date(), revokedReason: reason },
+      }),
+      this.prisma.userDevice.deleteMany({ where: { userId } }),
+    ]);
+    this.realtime?.disconnectUser(userId);
     return count;
   }
 

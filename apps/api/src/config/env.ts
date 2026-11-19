@@ -55,6 +55,8 @@ export const envSchema = z
     S3_AUTO_CREATE_BUCKET: booleanString.default(false),
     /** Fotoğraf denetim sağlayıcısı. Şimdilik yalnızca `dev-auto-approve` (production'da yasak, K8). */
     MODERATION_PROVIDER: z.enum(['dev-auto-approve']).default('dev-auto-approve'),
+    /** Push sağlayıcısı. Şimdilik yalnızca `console` (bildirimi loga yazar; production'da yasak, açık karar #11). */
+    PUSH_PROVIDER: z.enum(['console']).default('console'),
     /** Bu sürümün altındaki mobil uygulamalar güncellemeye zorlanır. */
     APP_MIN_VERSION: z
       .string()
@@ -96,6 +98,13 @@ export const envSchema = z
         code: 'custom',
         path: ['MODERATION_PROVIDER'],
         message: "production'da gerçek bir fotoğraf denetim sağlayıcısı gerekir",
+      });
+    }
+    if (env.NODE_ENV === 'production' && env.PUSH_PROVIDER === 'console') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PUSH_PROVIDER'],
+        message: "production'da gerçek bir push sağlayıcısı (FCM/APNs) gerekir",
       });
     }
     if (env.NODE_ENV === 'production' && env.S3_AUTO_CREATE_BUCKET) {

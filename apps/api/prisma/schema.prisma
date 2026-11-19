@@ -73,21 +73,25 @@ model User {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
-  sessions       Session[]
-  consents       ConsentRecord[]
-  dataRequests   DataRequest[]
-  profile        Profile?
-  photos         ProfilePhoto[]
-  interests      UserInterest[]
-  preference     Preference?
-  likesGiven     Like[]          @relation("LikeActor")
-  likesReceived  Like[]          @relation("LikeTarget")
-  passesGiven    Pass[]          @relation("PassActor")
-  passesReceived Pass[]          @relation("PassTarget")
-  matchesAsA     Match[]         @relation("MatchUserA")
-  matchesAsB     Match[]         @relation("MatchUserB")
-  blocksGiven    Block[]         @relation("BlockBlocker")
-  blocksReceived Block[]         @relation("BlockBlocked")
+  sessions                 Session[]
+  consents                 ConsentRecord[]
+  dataRequests             DataRequest[]
+  profile                  Profile?
+  photos                   ProfilePhoto[]
+  interests                UserInterest[]
+  preference               Preference?
+  likesGiven               Like[]                    @relation("LikeActor")
+  likesReceived            Like[]                    @relation("LikeTarget")
+  passesGiven              Pass[]                    @relation("PassActor")
+  passesReceived           Pass[]                    @relation("PassTarget")
+  matchesAsA               Match[]                   @relation("MatchUserA")
+  matchesAsB               Match[]                   @relation("MatchUserB")
+  blocksGiven              Block[]                   @relation("BlockBlocker")
+  blocksReceived           Block[]                   @relation("BlockBlocked")
+  conversationParticipants ConversationParticipant[]
+  messages                 Message[]
+  userDevices              UserDevice[]
+  notificationSettings     NotificationSettings?
 
   @@index([status, lastActiveAt])
 }
@@ -107,7 +111,8 @@ model Session {
   revokedAt         DateTime?
   revokedReason     String?   @db.VarChar(32)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  devices UserDevice[]
 
   @@index([userId, revokedAt])
 }
@@ -308,8 +313,9 @@ model Match {
   unmatchedAt   DateTime?
   createdAt     DateTime    @default(now())
 
-  userA User @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
-  userB User @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  userA        User          @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB        User          @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  conversation Conversation?
 
   @@unique([userAId, userBId])
   @@index([userAId, status, createdAt])
@@ -327,4 +333,93 @@ model Block {
   @@id([blockerId, blockedId])
   /// İki yönlü filtre için
   @@index([blockedId])
+}
+
+// ─── Faz 5: sohbet ve bildirimler ─────────────────────────────
+
+enum MessageType {
+  TEXT
+  SYSTEM
+}
+
+enum Platform {
+  IOS
+  ANDROID
+}
+
+/// Eşleşmeden doğan 1:1 sohbet. Eşleşme bitince katılımcılar ayrılmış sayılır (leftAt).
+model Conversation {
+  id            String    @id @default(uuid()) @db.Uuid
+  matchId       String    @unique @db.Uuid
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+
+  match        Match                     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+/// Sohbete erişimin tek kaynağı: kullanıcı yalnızca leftAt boş bir satırı varsa erişir.
+model ConversationParticipant {
+  conversationId String    @db.Uuid
+  userId         String    @db.Uuid
+  joinedAt       DateTime  @default(now())
+  leftAt         DateTime?
+  /// Bu ana kadarki mesajlar okundu sayılır (okunmamış sayısı ve "görüldü" için).
+  lastReadAt     DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId, leftAt])
+}
+
+model Message {
+  /// İstemci üretir (UUID): ağ hatasında tekrar gönderim aynı mesajı iki kez oluşturmaz.
+  id             String      @id @db.Uuid
+  conversationId String      @db.Uuid
+  /// SYSTEM mesajlarında null
+  senderId       String?     @db.Uuid
+  type           MessageType @default(TEXT)
+  body           String      @db.VarChar(2000)
+  createdAt      DateTime    @default(now())
+  /// Gönderen sildi: metin boşaltılır, satır sıralama için kalır.
+  deletedAt      DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt(sort: Desc), id(sort: Desc)])
+}
+
+/// Push bildirimi alacak cihaz. Oturuma bağlıdır: oturum kapanınca cihaz kaydı silinir
+/// (çıkış yapılmış telefona bildirim gitmez).
+model UserDevice {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  sessionId  String?   @db.Uuid
+  platform   Platform
+  /// Yerel FCM (Android) veya APNs (iOS) token'ı
+  pushToken  String    @unique @db.VarChar(512)
+  appVersion String?   @db.VarChar(32)
+  locale     String?   @db.VarChar(16)
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  /// Sağlayıcı token'ı geçersiz dedi; bu cihaza gönderilmez.
+  disabledAt DateTime?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, disabledAt])
+}
+
+model NotificationSettings {
+  userId     String   @id @db.Uuid
+  newMatch   Boolean  @default(true)
+  newMessage Boolean  @default(true)
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -15,6 +15,14 @@ export class LikeResultDto {
 
   @ApiProperty({ type: String, format: 'uuid', nullable: true })
   matchId!: string | null;
+
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description: 'Eşleşmeyle açılan sohbet',
+  })
+  conversationId!: string | null;
 }
 
 export class LikeResponseDto {
@@ -74,6 +82,9 @@ export class MatchDetailDto {
 
   @ApiProperty({ type: String, format: 'date-time' })
   matchedAt!: Date;
+
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
+  conversationId!: string | null;
 
   @ApiProperty({ type: ProfileCardDto })
   profile!: ProfileCardDto;

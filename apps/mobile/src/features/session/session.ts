@@ -49,7 +49,7 @@ export const refreshTokens = singleFlight(async (): Promise<void> => {
   }
 });
 
-async function validAccessToken(): Promise<string> {
+export async function validAccessToken(): Promise<string> {
   const { accessToken, accessTokenExpiresAt } = useSessionStore.getState();
   if (
     accessToken &&

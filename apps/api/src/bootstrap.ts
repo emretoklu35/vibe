@@ -8,6 +8,7 @@ import { HttpExceptionFilter } from './common/errors/http-exception.filter.js';
 import { createValidationPipe } from './common/validation/validation.pipe.js';
 import { APP_CONFIG } from './config/config.module.js';
 import type { AppConfig } from './config/env.js';
+import { RedisIoAdapter } from './modules/realtime/redis-io.adapter.js';
 
 export const API_PREFIX = 'api';
 export const SWAGGER_PATH = 'api/docs';
@@ -16,7 +17,7 @@ export const SWAGGER_PATH = 'api/docs';
  * HTTP katmanının tüm ortak ayarları. main.ts ve e2e testleri aynı fonksiyonu kullanır,
  * böylece testler production ile aynı davranışı doğrular.
  */
-export function configureApp(app: NestExpressApplication): AppConfig {
+export async function configureApp(app: NestExpressApplication): Promise<AppConfig> {
   const config = app.get<AppConfig>(APP_CONFIG);
 
   app.useLogger(app.get(Logger));
@@ -45,6 +46,11 @@ export function configureApp(app: NestExpressApplication): AppConfig {
   app.useGlobalPipes(createValidationPipe());
   app.useGlobalFilters(new HttpExceptionFilter());
   app.enableShutdownHooks();
+
+  // Socket.IO (/ws): birden fazla API süreci arasında olaylar Redis üzerinden dağıtılır.
+  const ioAdapter = new RedisIoAdapter(app, config.REDIS_URL, config.CORS_ORIGINS);
+  await ioAdapter.connectToRedis();
+  app.useWebSocketAdapter(ioAdapter);
 
   if (config.SWAGGER_ENABLED) setupSwagger(app);
   return config;
