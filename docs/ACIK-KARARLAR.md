@@ -39,7 +39,7 @@ Faz 1 öncesi gerekli olanlar **kalın**.
 1. **Doğrulama zorunluluğu:** Selfie/canlılık doğrulaması mesajlaşma için zorunlu mu, yoksa yalnızca "doğrulanmış" rozeti mi? (Öneri: MVP'de rozet + şikayet alan hesaplar için zorunlu.)
 2. ~~Cinsiyet seçenekleri ve aranan cinsiyet~~ → K6, K7.
 3. Günlük beğeni limiti var mı? (Premium'a hazırlık; MVP'de yalnızca spam limiti önerilir.)
-4. Geçilen (pass) profil ne kadar sonra yeniden gösterilsin? (Öneri: 30 gün.)
+4. Geçilen (pass) profil ne kadar sonra yeniden gösterilsin? Faz 4'te öneri (30 gün) uygulandı; değiştirmek tek sabit (`PASS_TTL_DAYS`).
 5. Eşleşme bitirme (unmatch) sonrası sohbet: her iki taraftan da gizlenir; şikayet için kanıt saklanır.
 6. AI Matchmaker MVP'de yalnızca kural tabanlı "neden uyumlusunuz" açıklaması olarak mı yer alsın? (Öneri: evet; LLM onboarding Faz 9.)
 7. Hesap silmede bekleme süresi (Öneri: 30 gün geri alınabilir, sonra kalıcı silme.)

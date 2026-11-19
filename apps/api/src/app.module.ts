@@ -9,9 +9,12 @@ import { QueueModule } from './infra/queue/queue.module.js';
 import { StorageModule } from './infra/storage/storage.module.js';
 import { RedisModule } from './infra/redis/redis.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { DiscoveryModule } from './modules/discovery/discovery.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { MatchingModule } from './modules/matching/matching.module.js';
 import { MediaModule } from './modules/media/media.module.js';
 import { ProfilesModule } from './modules/profiles/profiles.module.js';
+import { SafetyModule } from './modules/safety/safety.module.js';
 import { PrivacyModule } from './modules/privacy/privacy.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
@@ -33,6 +36,9 @@ import { UsersModule } from './modules/users/users.module.js';
     PrivacyModule,
     ProfilesModule,
     MediaModule,
+    DiscoveryModule,
+    MatchingModule,
+    SafetyModule,
     HealthModule,
   ],
 })

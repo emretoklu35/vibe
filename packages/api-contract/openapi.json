@@ -744,6 +744,305 @@
         "tags": ["photos"]
       }
     },
+    "/api/v1/discovery/status": {
+      "get": {
+        "operationId": "DiscoveryController_status_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveryStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Keşfet açık mı; değilse eksikler",
+        "tags": ["discovery"]
+      }
+    },
+    "/api/v1/discovery/candidates": {
+      "get": {
+        "description": "Keşfet hazır değilse 409 DISCOVERY_NOT_READY. Beğenilen, geçilen (30 gün) ve eşleşilen kişiler tekrar gelmez.",
+        "operationId": "DiscoveryController_candidates_v1",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 20,
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidatesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Aday kartları (uyum puanına göre sıralı)",
+        "tags": ["discovery"]
+      }
+    },
+    "/api/v1/likes": {
+      "post": {
+        "description": "Karşılıklıysa eşleşme oluşur (matched=true). İdempotenttir. Keşfette görünmeyen kişi için 404.",
+        "operationId": "MatchingController_like_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LikeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Beğen",
+        "tags": ["matching"]
+      }
+    },
+    "/api/v1/passes": {
+      "post": {
+        "operationId": "MatchingController_pass_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Geç (kişi 30 gün gösterilmez)",
+        "tags": ["matching"]
+      }
+    },
+    "/api/v1/matches": {
+      "get": {
+        "operationId": "MatchingController_list_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Önceki sayfanın meta.nextCursor değeri",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Aktif eşleşmeler (en yeni önce, sayfalı)",
+        "tags": ["matching"]
+      }
+    },
+    "/api/v1/matches/{id}": {
+      "get": {
+        "operationId": "MatchingController_detail_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Eşleşme ayrıntısı ve karşı tarafın profili",
+        "tags": ["matching"]
+      },
+      "delete": {
+        "operationId": "MatchingController_unmatch_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Eşleşmeyi bitir (geri alınamaz; kişi bir daha önerilmez)",
+        "tags": ["matching"]
+      }
+    },
+    "/api/v1/safety/blocks": {
+      "post": {
+        "operationId": "BlocksController_block_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Engelle (eşleşme varsa biter, iki taraf da birbirini görmez)",
+        "tags": ["safety"]
+      },
+      "get": {
+        "operationId": "BlocksController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlocksResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Engellediğin kişiler",
+        "tags": ["safety"]
+      }
+    },
+    "/api/v1/safety/blocks/{userId}": {
+      "delete": {
+        "operationId": "BlocksController_unblock_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Engeli kaldır (eşleşme geri gelmez)",
+        "tags": ["safety"]
+      }
+    },
     "/api/v1/health/live": {
       "get": {
         "operationId": "HealthController_live_v1",
@@ -1232,7 +1531,9 @@
               "UNSUPPORTED_MEDIA_TYPE",
               "UPLOAD_NOT_FOUND",
               "PHOTO_NOT_AWAITING_UPLOAD",
-              "INVALID_PHOTO_ORDER"
+              "INVALID_PHOTO_ORDER",
+              "DISCOVERY_NOT_READY",
+              "CANNOT_TARGET_SELF"
             ],
             "example": "VALIDATION_FAILED"
           },
@@ -1864,6 +2165,382 @@
           }
         },
         "required": ["photoIds"]
+      },
+      "DiscoveryRequirement": {
+        "type": "string",
+        "enum": [
+          "PROFILE",
+          "APPROVED_PHOTO",
+          "LOCATION",
+          "ORIENTATION_CONSENT",
+          "SEEKING_GENDERS",
+          "VISIBLE"
+        ],
+        "description": "Keşfeti açmak için eksik olanlar"
+      },
+      "DiscoveryStatusDto": {
+        "type": "object",
+        "properties": {
+          "ready": {
+            "type": "boolean"
+          },
+          "missing": {
+            "type": "array",
+            "description": "Keşfeti açmak için eksik olanlar",
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryRequirement"
+            }
+          }
+        },
+        "required": ["ready", "missing"]
+      },
+      "DiscoveryStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DiscoveryStatusDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "CardPhotoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string",
+            "description": "Kısa ömürlü (10 dk) adres"
+          },
+          "width": {
+            "type": "number",
+            "nullable": true
+          },
+          "height": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": ["id", "url", "width", "height"]
+      },
+      "CompatibilityDto": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Kural tabanlı uyum puanı; kesinlik iddiası taşımaz"
+          },
+          "reasons": {
+            "example": ["2 ortak ilgi alanı: Kahve, Caz"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["score", "reasons"]
+      },
+      "ProfileCardDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "age": {
+            "type": "number"
+          },
+          "gender": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Gender"
+              }
+            ]
+          },
+          "cityName": {
+            "type": "string",
+            "nullable": true
+          },
+          "distanceLabel": {
+            "type": "string",
+            "example": "3 km",
+            "description": "Yuvarlanmış mesafe; ör. \"2 km'den yakın\", \"100+ km\""
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true
+          },
+          "jobTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "heightCm": {
+            "type": "number",
+            "nullable": true
+          },
+          "relationshipGoal": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RelationshipGoal"
+              }
+            ]
+          },
+          "smoking": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Frequency"
+              }
+            ]
+          },
+          "drinking": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Frequency"
+              }
+            ]
+          },
+          "exercise": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Frequency"
+              }
+            ]
+          },
+          "wantsChildren": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "communicationStyle": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommunicationStyle"
+              }
+            ]
+          },
+          "interests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InterestDto"
+            }
+          },
+          "photos": {
+            "description": "Yalnızca onaylı fotoğraflar, sıralı",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CardPhotoDto"
+            }
+          },
+          "compatibility": {
+            "$ref": "#/components/schemas/CompatibilityDto"
+          }
+        },
+        "required": [
+          "userId",
+          "displayName",
+          "age",
+          "gender",
+          "cityName",
+          "distanceLabel",
+          "bio",
+          "jobTitle",
+          "heightCm",
+          "relationshipGoal",
+          "smoking",
+          "drinking",
+          "exercise",
+          "wantsChildren",
+          "communicationStyle",
+          "interests",
+          "photos",
+          "compatibility"
+        ]
+      },
+      "CandidatesResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileCardDto"
+            }
+          }
+        },
+        "required": ["data"]
+      },
+      "TargetUserDto": {
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["targetUserId"]
+      },
+      "LikeResultDto": {
+        "type": "object",
+        "properties": {
+          "matched": {
+            "type": "boolean",
+            "description": "Karşılıklı beğeni oluştu mu"
+          },
+          "matchId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": ["matched", "matchId"]
+      },
+      "LikeResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LikeResultDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "MatchUserDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "age": {
+            "type": "number"
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Ana fotoğraf (10 dk geçerli)"
+          }
+        },
+        "required": ["userId", "displayName", "age", "photoUrl"]
+      },
+      "MatchSummaryDto": {
+        "type": "object",
+        "properties": {
+          "matchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "matchedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/MatchUserDto"
+          }
+        },
+        "required": ["matchId", "matchedAt", "user"]
+      },
+      "MatchesMetaDto": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": ["nextCursor"]
+      },
+      "MatchesResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchSummaryDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MatchesMetaDto"
+          }
+        },
+        "required": ["data", "meta"]
+      },
+      "MatchDetailDto": {
+        "type": "object",
+        "properties": {
+          "matchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "matchedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/ProfileCardDto"
+          }
+        },
+        "required": ["matchId", "matchedAt", "profile"]
+      },
+      "MatchDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MatchDetailDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "BlockUserDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["userId"]
+      },
+      "BlockedUserDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "blockedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["userId", "displayName", "blockedAt"]
+      },
+      "BlocksResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockedUserDto"
+            }
+          }
+        },
+        "required": ["data"]
       },
       "LiveDataDto": {
         "type": "object",

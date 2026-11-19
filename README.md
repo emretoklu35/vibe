@@ -2,7 +2,7 @@
 
 More than a match. Real chemistry.
 
-Türkiye için premium, yapay zekâ destekli tanışma uygulaması. **Durum: Faz 3 (profil, fotoğraf, tercihler, konum) tamamlandı.** Yol haritası: [docs/06-YOL-HARITASI.md](docs/06-YOL-HARITASI.md).
+Türkiye için premium, yapay zekâ destekli tanışma uygulaması. **Durum: Faz 4 (keşfet, eşleşme, engelleme) tamamlandı.** Yol haritası: [docs/06-YOL-HARITASI.md](docs/06-YOL-HARITASI.md).
 
 ## Gereksinimler
 

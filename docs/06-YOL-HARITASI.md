@@ -9,7 +9,7 @@ flowchart TD
   F0[Faz 0\nPlanlama ✔] --> F1[Faz 1\nTemel altyapı ✔]
   F1 --> F2[Faz 2\nAuth + hesap + rıza ✔]
   F2 --> F3[Faz 3\nProfil + medya + konum ✔]
-  F3 --> F4[Faz 4\nKeşfet + eşleşme + engelleme]
+  F3 --> F4[Faz 4\nKeşfet + eşleşme + engelleme ✔]
   F4 --> F5[Faz 5\nSohbet + push]
   F3 --> F6[Faz 6\nGüvenlik + moderasyon + admin]
   F5 --> F6
@@ -67,14 +67,17 @@ flowchart TD
 - **Testler:** API 70 birim + 88 e2e (gerçek PostGIS + SeaweedFS), mobil 25; onboarding ve düzenleme web önizlemede uçtan uca denendi.
 - **Ertelenenler:** Mobilde konum izni ve konum gönderme → Faz 4 (keşfet ekranıyla birlikte; API hazır). Gerçek denetim sağlayıcısı → karar #12. Fotoğraf seçicinin kendisi (işletim sistemi penceresi) otomatik denenemedi; yükleme yolu sayfa içinden aynı API ve S3 çağrılarıyla doğrulandı.
 
-### Faz 4 — Keşfet, eşleşme, engelleme
+### Faz 4 — Keşfet, eşleşme, engelleme ✅ (2026-11-19, onay bekliyor)
 
-- Mobilde konum izni + `PUT /profiles/me/location` (Faz 3'ten).
-- Sert filtreler (PostGIS + SQL), puanlama (saf fonksiyonlar), açıklamalar, cache.
-- Like/Pass, karşılıklı eşleşme (transaction + unique yarış testi), unmatch, `GET /matches`.
-- Engelleme (keşfet filtresine gerekli olduğu için burada).
-- Mobil: kart yığını, like/pass, eşleşme ekranı, eşleşme listesi.
-- **Testler:** her filtre kuralı, engellenenin hiç görünmemesi (iki yön), çift like, eşzamanlı karşılıklı like → tek Match, puanlama birim testleri.
+- Keşfet: sert filtreler tek SQL sorgusunda ve **karşılıklı** (cinsiyet, yaş aralığı, mesafe — iki tarafın tercihi de), aktif hesap, görünür profil, onaylı fotoğraf, iki yönlü engel yok; beğenilen, 30 gün içinde geçilen ve eşleşilen (bitmiş dahil) kişiler gelmez.
+- Uyum puanı: deterministik, AI'sız saf fonksiyon (ilgi alanı, ilişki beklentisi, yaşam tarzı, iletişim, mesafe, aktiflik); eksik bilgi cezalandırılmaz; gerekçeler "ortak noktalarınız" olarak gösterilir, bilimsel iddia yok.
+- Kart: yalnızca onaylı fotoğraflar, yuvarlanmış mesafe ("2 km'den yakın" … "100+ km"); aranan cinsiyet, yaş tercihleri ve koordinat asla dönmez.
+- Beğeni yalnızca keşfette görünen kişiye (rastgele kimlikle toplu beğeni/tarama engeli); idempotent; eşzamanlı karşılıklı beğenide advisory lock + sıralı çift unique + CHECK ile tek eşleşme; bitmiş eşleşme yeniden açılmaz.
+- Eşleşmeler (imleçli sayfalama), eşleşme ayrıntısı (keşfet filtrelerinden bağımsız), eşleşmeyi bitirme; engelleme (eşleşmeyi aynı işlemde bitirir), engeli kaldırma (eşleşme geri gelmez), engellenenler listesi.
+- Mobil: sekmeler (Keşfet, Eşleşmeler, Profil), keşfet eksikleri listesi + konum izni ve paylaşımı (6 saatte bir sessiz güncelleme), kart (fotoğraflar arası dokunarak geçiş, ortak noktalar), beğen/geç/engelle, "Eşleştiniz!" ekranı, eşleşme ayrıntısı, engellenenler.
+- **Testler:** API 84 birim + 104 e2e (yarış testi dahil), mobil 25; akış web önizlemede uçtan uca denendi.
+- **Bulunan ve düzeltilenler:** korumalı rota grubu klasörüne (/(app)) yönlendiriyordu → her gruba açık `redirectTo`; onboarding ve uygulama ekranlarının aynı URL'ye çözülmesi (`setup-*` adlandırması); "Yakınında" gerekçesinin yuvarlanmış mesafeyle çelişmesi (eşik 3 km).
+- **Bilinen sınırlamalar:** Kart kaydırma (swipe) hareketi yok, düğmelerle çalışıyor (erişilebilirlik için de gerekli; hareket sonra eklenebilir). Mobil konum web'de taklit edilerek denendi; gerçek cihazda izin akışı denenmedi. Aday havuzu en yakın/en aktif 200 kişiyle sınırlı (R14 — yük testi Faz 7).
 
 ### Faz 5 — Sohbet ve bildirim
 

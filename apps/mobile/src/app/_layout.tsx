@@ -1,5 +1,5 @@
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, type Href, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -10,6 +10,15 @@ import { useSessionStore } from '@/features/session/session-store';
 import { LoadingView, UnreachableView } from '@/features/session/status-views';
 import { meQueryKey, useMe } from '@/features/session/use-me';
 import { createQueryClient } from '@/lib/query-client';
+
+const STEP_HOME = {
+  BIRTH_DATE: '/birth-date',
+  CONSENTS: '/consents',
+  PROFILE: '/setup-profile',
+  PHOTOS: '/setup-photos',
+  PREFERENCES: '/setup-preferences',
+  COMPLETE: '/discover',
+} as const;
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Splash zaten kapanmışsa (ör. hızlı yenileme) yapılacak bir şey yok.
@@ -87,44 +96,46 @@ function RootNavigator() {
   const account = status === 'signedIn' ? me.data : undefined;
   const pendingDeletion = account?.status === 'DELETION_PENDING';
   const step = pendingDeletion ? undefined : account?.onboardingStep;
+  // Erişilemeyen bir ekrandaysa kullanıcının gideceği yer. Açıkça verilir: aksi halde Expo Router
+  // "ilk erişilebilir ekran" olarak grup klasörünün kendisini (/(app)) seçebiliyor.
+  const home = (
+    !account ? '/' : pendingDeletion ? '/deletion-pending' : STEP_HOME[step ?? 'COMPLETE']
+  ) as Href;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!account}>
+      <Stack.Protected guard={!account} redirectTo={home}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)/phone" />
         <Stack.Screen name="(auth)/code" />
       </Stack.Protected>
 
-      <Stack.Protected guard={pendingDeletion}>
+      <Stack.Protected guard={pendingDeletion} redirectTo={home}>
         <Stack.Screen name="deletion-pending" />
       </Stack.Protected>
 
-      <Stack.Protected guard={step === 'BIRTH_DATE'}>
+      <Stack.Protected guard={step === 'BIRTH_DATE'} redirectTo={home}>
         <Stack.Screen name="(onboarding)/birth-date" />
       </Stack.Protected>
 
-      <Stack.Protected guard={step === 'CONSENTS'}>
+      <Stack.Protected guard={step === 'CONSENTS'} redirectTo={home}>
         <Stack.Screen name="(onboarding)/consents" />
       </Stack.Protected>
 
-      <Stack.Protected guard={step === 'PROFILE'}>
-        <Stack.Screen name="(onboarding)/profile" />
+      <Stack.Protected guard={step === 'PROFILE'} redirectTo={home}>
+        <Stack.Screen name="(onboarding)/setup-profile" />
       </Stack.Protected>
 
-      <Stack.Protected guard={step === 'PHOTOS'}>
-        <Stack.Screen name="(onboarding)/photos" />
+      <Stack.Protected guard={step === 'PHOTOS'} redirectTo={home}>
+        <Stack.Screen name="(onboarding)/setup-photos" />
       </Stack.Protected>
 
-      <Stack.Protected guard={step === 'PREFERENCES'}>
-        <Stack.Screen name="(onboarding)/preferences" />
+      <Stack.Protected guard={step === 'PREFERENCES'} redirectTo={home}>
+        <Stack.Screen name="(onboarding)/setup-preferences" />
       </Stack.Protected>
 
-      <Stack.Protected guard={step === 'COMPLETE'}>
-        <Stack.Screen name="(app)/home" />
-        <Stack.Screen name="(app)/profile-edit" />
-        <Stack.Screen name="(app)/photos" />
-        <Stack.Screen name="(app)/preferences" />
+      <Stack.Protected guard={step === 'COMPLETE'} redirectTo={home}>
+        <Stack.Screen name="(app)" />
       </Stack.Protected>
 
       <Stack.Screen name="legal/[type]" options={{ presentation: 'modal' }} />

@@ -200,7 +200,9 @@ export type ErrorBodyDto = {
     | 'UNSUPPORTED_MEDIA_TYPE'
     | 'UPLOAD_NOT_FOUND'
     | 'PHOTO_NOT_AWAITING_UPLOAD'
-    | 'INVALID_PHOTO_ORDER';
+    | 'INVALID_PHOTO_ORDER'
+    | 'DISCOVERY_NOT_READY'
+    | 'CANNOT_TARGET_SELF';
   message: string;
   /**
    * Hataya özgü ayrıntılar (ör. alan hataları)
@@ -419,6 +421,138 @@ export type ReorderPhotosDto = {
    * Fotoğrafların yeni sırası (ilk = ana fotoğraf)
    */
   photoIds: Array<string>;
+};
+
+/**
+ * Keşfeti açmak için eksik olanlar
+ */
+export type DiscoveryRequirement =
+  'PROFILE' | 'APPROVED_PHOTO' | 'LOCATION' | 'ORIENTATION_CONSENT' | 'SEEKING_GENDERS' | 'VISIBLE';
+
+export type DiscoveryStatusDto = {
+  ready: boolean;
+  /**
+   * Keşfeti açmak için eksik olanlar
+   */
+  missing: Array<DiscoveryRequirement>;
+};
+
+export type DiscoveryStatusResponseDto = {
+  data: DiscoveryStatusDto;
+};
+
+export type CardPhotoDto = {
+  id: string;
+  /**
+   * Kısa ömürlü (10 dk) adres
+   */
+  url: string;
+  width: number | null;
+  height: number | null;
+};
+
+export type CompatibilityDto = {
+  /**
+   * Kural tabanlı uyum puanı; kesinlik iddiası taşımaz
+   */
+  score: number;
+  reasons: Array<string>;
+};
+
+export type ProfileCardDto = {
+  userId: string;
+  displayName: string;
+  age: number;
+  gender: Gender;
+  cityName: string | null;
+  /**
+   * Yuvarlanmış mesafe; ör. "2 km'den yakın", "100+ km"
+   */
+  distanceLabel: string;
+  bio: string | null;
+  jobTitle: string | null;
+  heightCm: number | null;
+  relationshipGoal: RelationshipGoal | null;
+  smoking: Frequency | null;
+  drinking: Frequency | null;
+  exercise: Frequency | null;
+  wantsChildren: boolean | null;
+  communicationStyle: CommunicationStyle | null;
+  interests: Array<InterestDto>;
+  /**
+   * Yalnızca onaylı fotoğraflar, sıralı
+   */
+  photos: Array<CardPhotoDto>;
+  compatibility: CompatibilityDto;
+};
+
+export type CandidatesResponseDto = {
+  data: Array<ProfileCardDto>;
+};
+
+export type TargetUserDto = {
+  targetUserId: string;
+};
+
+export type LikeResultDto = {
+  /**
+   * Karşılıklı beğeni oluştu mu
+   */
+  matched: boolean;
+  matchId: string | null;
+};
+
+export type LikeResponseDto = {
+  data: LikeResultDto;
+};
+
+export type MatchUserDto = {
+  userId: string;
+  displayName: string;
+  age: number;
+  /**
+   * Ana fotoğraf (10 dk geçerli)
+   */
+  photoUrl: string | null;
+};
+
+export type MatchSummaryDto = {
+  matchId: string;
+  matchedAt: string;
+  user: MatchUserDto;
+};
+
+export type MatchesMetaDto = {
+  nextCursor: string | null;
+};
+
+export type MatchesResponseDto = {
+  data: Array<MatchSummaryDto>;
+  meta: MatchesMetaDto;
+};
+
+export type MatchDetailDto = {
+  matchId: string;
+  matchedAt: string;
+  profile: ProfileCardDto;
+};
+
+export type MatchDetailResponseDto = {
+  data: MatchDetailDto;
+};
+
+export type BlockUserDto = {
+  userId: string;
+};
+
+export type BlockedUserDto = {
+  userId: string;
+  displayName: string | null;
+  blockedAt: string;
+};
+
+export type BlocksResponseDto = {
+  data: Array<BlockedUserDto>;
 };
 
 export type LiveDataDto = {
@@ -821,6 +955,159 @@ export type PhotosControllerRemoveV1Responses = {
 
 export type PhotosControllerRemoveV1Response =
   PhotosControllerRemoveV1Responses[keyof PhotosControllerRemoveV1Responses];
+
+export type DiscoveryControllerStatusV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/discovery/status';
+};
+
+export type DiscoveryControllerStatusV1Responses = {
+  200: DiscoveryStatusResponseDto;
+};
+
+export type DiscoveryControllerStatusV1Response =
+  DiscoveryControllerStatusV1Responses[keyof DiscoveryControllerStatusV1Responses];
+
+export type DiscoveryControllerCandidatesV1Data = {
+  body?: never;
+  path?: never;
+  query?: {
+    limit?: number;
+  };
+  url: '/api/v1/discovery/candidates';
+};
+
+export type DiscoveryControllerCandidatesV1Responses = {
+  200: CandidatesResponseDto;
+};
+
+export type DiscoveryControllerCandidatesV1Response =
+  DiscoveryControllerCandidatesV1Responses[keyof DiscoveryControllerCandidatesV1Responses];
+
+export type MatchingControllerLikeV1Data = {
+  body: TargetUserDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/likes';
+};
+
+export type MatchingControllerLikeV1Responses = {
+  200: LikeResponseDto;
+};
+
+export type MatchingControllerLikeV1Response =
+  MatchingControllerLikeV1Responses[keyof MatchingControllerLikeV1Responses];
+
+export type MatchingControllerPassV1Data = {
+  body: TargetUserDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/passes';
+};
+
+export type MatchingControllerPassV1Responses = {
+  204: void;
+};
+
+export type MatchingControllerPassV1Response =
+  MatchingControllerPassV1Responses[keyof MatchingControllerPassV1Responses];
+
+export type MatchingControllerListV1Data = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Önceki sayfanın meta.nextCursor değeri
+     */
+    cursor?: string;
+  };
+  url: '/api/v1/matches';
+};
+
+export type MatchingControllerListV1Responses = {
+  200: MatchesResponseDto;
+};
+
+export type MatchingControllerListV1Response =
+  MatchingControllerListV1Responses[keyof MatchingControllerListV1Responses];
+
+export type MatchingControllerUnmatchV1Data = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/matches/{id}';
+};
+
+export type MatchingControllerUnmatchV1Responses = {
+  204: void;
+};
+
+export type MatchingControllerUnmatchV1Response =
+  MatchingControllerUnmatchV1Responses[keyof MatchingControllerUnmatchV1Responses];
+
+export type MatchingControllerDetailV1Data = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api/v1/matches/{id}';
+};
+
+export type MatchingControllerDetailV1Responses = {
+  200: MatchDetailResponseDto;
+};
+
+export type MatchingControllerDetailV1Response =
+  MatchingControllerDetailV1Responses[keyof MatchingControllerDetailV1Responses];
+
+export type BlocksControllerListV1Data = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/safety/blocks';
+};
+
+export type BlocksControllerListV1Responses = {
+  200: BlocksResponseDto;
+};
+
+export type BlocksControllerListV1Response =
+  BlocksControllerListV1Responses[keyof BlocksControllerListV1Responses];
+
+export type BlocksControllerBlockV1Data = {
+  body: BlockUserDto;
+  path?: never;
+  query?: never;
+  url: '/api/v1/safety/blocks';
+};
+
+export type BlocksControllerBlockV1Responses = {
+  204: void;
+};
+
+export type BlocksControllerBlockV1Response =
+  BlocksControllerBlockV1Responses[keyof BlocksControllerBlockV1Responses];
+
+export type BlocksControllerUnblockV1Data = {
+  body?: never;
+  path: {
+    userId: string;
+  };
+  query?: never;
+  url: '/api/v1/safety/blocks/{userId}';
+};
+
+export type BlocksControllerUnblockV1Responses = {
+  204: void;
+};
+
+export type BlocksControllerUnblockV1Response =
+  BlocksControllerUnblockV1Responses[keyof BlocksControllerUnblockV1Responses];
 
 export type HealthControllerLiveV1Data = {
   body?: never;

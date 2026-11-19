@@ -22,10 +22,9 @@ import { useMe } from '@/features/session/use-me';
 const sessionsKey = ['sessions'] as const;
 
 /**
- * Onboarding sonrası ana ekran: profil özeti ve düzenleme, hesap işlemleri.
- * Keşfet ve eşleşmeler Faz 4'te sekmeli yapıya geçecek.
+ * Profil sekmesi: profil özeti ve düzenleme, hesap işlemleri.
  */
-export default function HomeScreen() {
+export default function ProfileTabScreen() {
   const theme = useTheme();
   const me = useMe();
 
@@ -37,9 +36,6 @@ export default function HomeScreen() {
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="title" accessibilityRole="header">
             Profilin
-          </Text>
-          <Text variant="body" color="textMuted">
-            Keşfet ve eşleşmeler bir sonraki güncellemeyle gelecek.
           </Text>
         </View>
 

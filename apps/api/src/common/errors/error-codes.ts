@@ -47,6 +47,10 @@ export const ErrorCode = {
   UPLOAD_NOT_FOUND: 'UPLOAD_NOT_FOUND',
   PHOTO_NOT_AWAITING_UPLOAD: 'PHOTO_NOT_AWAITING_UPLOAD',
   INVALID_PHOTO_ORDER: 'INVALID_PHOTO_ORDER',
+
+  // Keşfet ve eşleşme
+  DISCOVERY_NOT_READY: 'DISCOVERY_NOT_READY',
+  CANNOT_TARGET_SELF: 'CANNOT_TARGET_SELF',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

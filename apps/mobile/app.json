@@ -44,6 +44,15 @@
           "cameraPermission": false,
           "microphonePermission": false
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Yakınındaki kişileri gösterebilmek için yaklaşık konumuna ihtiyacımız var. Kesin konumun kimseyle paylaşılmaz.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
       ]
     ],
     "experiments": {
