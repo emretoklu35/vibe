@@ -26,11 +26,14 @@ type ErrorEnvelope = {
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 
-export async function apiRequest<T>(
-  path: `/${string}`,
-  init: RequestInit & { timeoutMs?: number } = {},
-): Promise<T> {
-  const { timeoutMs = DEFAULT_TIMEOUT_MS, headers, signal, ...rest } = init;
+export type ApiRequestInit = Omit<RequestInit, 'body'> & {
+  timeoutMs?: number;
+  /** JSON olarak gönderilecek gövde. */
+  json?: unknown;
+};
+
+export async function apiRequest<T>(path: `/${string}`, init: ApiRequestInit = {}): Promise<T> {
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, headers, signal, json, ...rest } = init;
 
   // AbortSignal.timeout/any React Native'de garanti değil; tek bir controller elle yönetilir.
   const controller = new AbortController();
@@ -47,7 +50,12 @@ export async function apiRequest<T>(
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...rest,
-      headers: { Accept: 'application/json', ...headers },
+      headers: {
+        Accept: 'application/json',
+        ...(json === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...headers,
+      },
+      body: json === undefined ? undefined : JSON.stringify(json),
       signal: controller.signal,
     });
   } catch (cause) {
@@ -63,7 +71,9 @@ export async function apiRequest<T>(
     signal?.removeEventListener('abort', forwardAbort);
   }
 
-  const body: unknown = await response.json().catch(() => undefined);
+  // 204 gibi gövdesiz yanıtlar
+  const body: unknown =
+    response.status === 204 ? undefined : await response.json().catch(() => undefined);
 
   if (!response.ok) {
     const envelope = (body ?? {}) as ErrorEnvelope;

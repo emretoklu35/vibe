@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import { IsInt, IsString, Max, MaxLength, Min, ValidateNested } from 'class-validator';
 
 import { RateLimit } from '../../src/common/rate-limit/rate-limit.decorator.js';
+import { Public } from '../../src/modules/auth/auth.decorators.js';
 
 class NestedDto {
   @IsString()
@@ -22,6 +23,7 @@ export class EchoDto {
 }
 
 /** Yalnızca testlerde yüklenir: ortak HTTP katmanını (doğrulama, rate limit) uçtan uca sınamak için. */
+@Public()
 @Controller('__test')
 export class FixturesController {
   @Post('echo')

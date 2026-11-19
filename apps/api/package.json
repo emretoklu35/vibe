@@ -17,7 +17,10 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "worker:dev": "nest start --watch --entryFile worker",
+    "worker": "node dist/src/worker.js",
+    "openapi:export": "nest build && node dist/src/scripts/export-openapi.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.5.1",
@@ -26,10 +29,12 @@
     "@nestjs/swagger": "^12.1.2",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
+    "bullmq": "^6.7.8",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "helmet": "^8.3.0",
     "ioredis": "^6.0.0",
+    "jose": "^6.2.18",
     "nestjs-pino": "^5.3.2",
     "pg": "^8.23.1",
     "pino": "^10.4.0",

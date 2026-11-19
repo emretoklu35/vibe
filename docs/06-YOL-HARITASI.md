@@ -7,7 +7,7 @@ Her faz küçük, bağımsız test edilebilir ve şu raporla biter (brief §12):
 ```mermaid
 flowchart TD
   F0[Faz 0\nPlanlama ✔] --> F1[Faz 1\nTemel altyapı ✔]
-  F1 --> F2[Faz 2\nAuth + hesap + rıza]
+  F1 --> F2[Faz 2\nAuth + hesap + rıza ✔]
   F2 --> F3[Faz 3\nProfil + medya + konum]
   F3 --> F4[Faz 4\nKeşfet + eşleşme + engelleme]
   F4 --> F5[Faz 5\nSohbet + push]
@@ -41,15 +41,19 @@ flowchart TD
   - `packages/api-contract` (OpenAPI → TS tipleri) → Faz 2 (ilk gerçek uçlarla; `openapi-typescript` henüz TypeScript 6'yı desteklemiyor, alternatif değerlendirilecek).
   - Mobil birim testleri (jest-expo) → Faz 2 (ilk iş mantığıyla).
 
-### Faz 2 — Auth, hesap, rıza
+### Faz 2 — Auth, hesap, rıza ✅ (2026-11-19, onay bekliyor)
 
-- Faz 1'den devralınan: BullMQ worker, Sentry, `packages/api-contract`, jest-expo.
-- OTP (console + gerçek SMS adaptörü), Session + refresh rotasyonu + yeniden kullanım tespiti, auth guard.
-- Doğum tarihi + 18 yaş kapısı, ConsentRecord, `/app/config`, `UserDevice`.
-- Hesap silme talebi + geri alma, silme işi (henüz medya yok).
-- Mobil: telefon → kod → doğum tarihi → rızalar akışı, secure-store, otomatik token yenileme.
-- **Testler:** OTP doğru/yanlış/süresi dolmuş/deneme limiti, refresh rotasyonu, token yeniden kullanımı, 18 altı reddi, rate limit.
-- **Bağımlı kararlar:** #9 SMS sağlayıcı, #15 rıza metinleri (taslak metinle ilerlenebilir).
+- Telefon OTP (Redis'te HMAC özeti, 5 dk, 5 deneme, tek kullanım), SMS sağlayıcı arayüzü + yalnızca-geliştirme `console` adaptörü (production'da açılış reddedilir).
+- Oturumlar: 15 dk JWT (HS256, jose) + opak refresh token (DB'de SHA-256), rotasyon, yeniden kullanımda oturum iptali; global auth guard (oturum ve hesap durumu her istekte DB'den).
+- Telefon numarası: HMAC özeti (arama) + AES-256-GCM (geri çözülebilir); düz numara DB'de, logda ve Redis anahtarlarında yok.
+- Doğum tarihi + 18 yaş kapısı (Europe/Istanbul); 18 altı beyanında hesap hemen silinir, numara 30 gün kayıt olamaz.
+- Rızalar: yalnızca-ekleme `ConsentRecord`, sürümlü hukuki metinler (TASLAK), `/app/config`, `/legal/documents/:type`.
+- Hesap silme (30 gün bekleme, geri alma) + BullMQ worker ile kalıcı silme; açık talep başına kısmi unique index.
+- `packages/api-contract`: OpenAPI → TS tipleri (`@hey-api/openapi-ts`); CI güncelliğini kontrol eder.
+- Mobil: açılış → telefon → kod → doğum tarihi → rızalar → hesap ekranı (oturumlar, çıkış, hesap silme) ve silme bekleyen hesap ekranı; Expo Router `Stack.Protected`, secure-store, tek uçuşlu token yenileme, jest-expo testleri.
+- **Testler:** API 59 birim + 58 e2e, mobil 23 birim; akışın tamamı web önizlemede uçtan uca denendi.
+- **Ertelenenler:** `UserDevice` / push kaydı → Faz 5 (push ile birlikte). Sentry → Faz 7 (hesap/DSN ve yurt dışı aktarım kararı gerekir). Gerçek SMS sağlayıcı → karar #9 verilince.
+- **Bağımlı kararlar:** #9 SMS sağlayıcı (production için zorunlu), #15 hukuki metinler.
 
 ### Faz 3 — Profil, medya, konum
 
@@ -71,7 +75,7 @@ flowchart TD
 ### Faz 5 — Sohbet ve bildirim
 
 - Conversation/Participant/Message, REST gönderim, Socket.IO + Redis adapter, okundu bilgisi.
-- Push (FCM/APNs), bildirim tercihleri, uygulama içi bildirimler.
+- `UserDevice` + push kaydı (Faz 2'den), push (FCM/APNs), bildirim tercihleri, uygulama içi bildirimler.
 - Mobil: sohbet listesi, sohbet ekranı, push izin akışı.
 - **Testler:** katılımcı olmayanın erişememesi (REST + socket), engel/unmatch sonrası erişim, mesaj idempotency, sayfalama.
 
@@ -85,7 +89,7 @@ flowchart TD
 
 ### Faz 7 — Lansman hazırlığı
 
-- Hukuki metinler, VERBİS, alt işleyici envanteri ve aktarım sözleşmeleri, 5651 süreçleri.
+- Sentry (API + mobil, PII kapalı; Faz 2'den), hukuki metinler, VERBİS, alt işleyici envanteri ve aktarım sözleşmeleri, 5651 süreçleri.
 - Mağaza uyumu: 18+ derecelendirme, hesap silme uygulama içinden, gizlilik etiketleri / Data safety, kullanıcı içeriği politikası (engelle/şikayet görünür).
 - Yük testi (keşfet sorgusu, socket), güvenlik testi (OWASP MASVS/ASVS kontrol listesi), yedekleme/geri yükleme provası.
 - Maestro E2E, EAS production build, kapalı beta (TestFlight / Play internal).

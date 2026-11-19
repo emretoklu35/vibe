@@ -10,10 +10,12 @@ import { AppException } from '../../common/errors/app.exception.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 import { ErrorResponseDto } from '../../common/errors/error-response.dto.js';
 import { SkipRateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
+import { Public } from '../auth/auth.decorators.js';
 import { LiveResponseDto, ReadyResponseDto } from './health.dto.js';
 import { HealthService } from './health.service.js';
 
 @ApiTags('health')
+@Public()
 @SkipRateLimit()
 @Controller('health')
 export class HealthController {

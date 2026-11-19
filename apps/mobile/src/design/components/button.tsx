@@ -6,7 +6,7 @@ import { Text } from './text';
 type ButtonProps = {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'ghost';
   loading?: boolean;
   disabled?: boolean;
   accessibilityHint?: string;
@@ -38,7 +38,11 @@ export function Button({
           borderRadius: theme.radii.pill,
           paddingHorizontal: theme.spacing.xl,
           backgroundColor: isPrimary ? theme.colors.accent : 'transparent',
-          borderColor: isPrimary ? theme.colors.accent : theme.colors.border,
+          borderColor: isPrimary
+            ? theme.colors.accent
+            : variant === 'ghost'
+              ? 'transparent'
+              : theme.colors.border,
           opacity: inactive ? 0.5 : pressed ? 0.85 : 1,
           transform: [{ scale: pressed ? 0.98 : 1 }],
         },
@@ -47,7 +51,10 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={isPrimary ? theme.colors.onAccent : theme.colors.text} />
       ) : (
-        <Text variant="label" color={isPrimary ? 'onAccent' : 'text'}>
+        <Text
+          variant="label"
+          color={isPrimary ? 'onAccent' : variant === 'ghost' ? 'accent' : 'text'}
+        >
           {label}
         </Text>
       )}

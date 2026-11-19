@@ -23,3 +23,109 @@ model Interest {
 
   @@index([category])
 }
+
+// ─── Faz 2: hesap, oturum, rıza ───────────────────────────────
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DELETION_PENDING
+}
+
+enum ConsentType {
+  PRIVACY_NOTICE_ACK
+  TERMS_OF_SERVICE
+  SPECIAL_CATEGORY_ORIENTATION
+  CROSS_BORDER_TRANSFER
+  PRECISE_LOCATION
+  MARKETING_NOTIFICATIONS
+}
+
+enum DataRequestType {
+  EXPORT
+  DELETION
+}
+
+enum DataRequestStatus {
+  REQUESTED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+/// Hesap. Düz telefon numarası, ad-soyad, e-posta tutulmaz.
+model User {
+  id                  String        @id @default(uuid()) @db.Uuid
+  /// HMAC-SHA256(E.164, PHONE_HMAC_KEY) — arama ve tekillik için
+  phoneHash           String        @unique
+  /// AES-256-GCM (sürüm baytı + IV + etiket + şifreli metin) — yalnızca SMS göndermek için çözülür
+  phoneEncrypted      Bytes
+  /// Onboarding'de bir kez girilir; profilde yalnızca yaş gösterilir
+  birthDate           DateTime?     @db.Date
+  status              AccountStatus @default(ACTIVE)
+  suspendedUntil      DateTime?
+  deletionRequestedAt DateTime?
+  lastActiveAt        DateTime      @default(now())
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  sessions     Session[]
+  consents     ConsentRecord[]
+  dataRequests DataRequest[]
+
+  @@index([status, lastActiveAt])
+}
+
+/// Refresh token ailesi. Token'ın kendisi değil SHA-256 özeti saklanır.
+model Session {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid
+  refreshTokenHash  String    @unique
+  /// Bir önceki token: tekrar gelirse token çalınmış sayılır ve oturum iptal edilir
+  previousTokenHash String?   @unique
+  deviceId          String?   @db.VarChar(128)
+  userAgent         String?   @db.VarChar(256)
+  createdAt         DateTime  @default(now())
+  lastUsedAt        DateTime  @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  revokedReason     String?   @db.VarChar(32)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+}
+
+/// Rıza geçmişi (yalnızca ekleme). Güncel durum = türe göre en son kayıt.
+model ConsentRecord {
+  id          String      @id @default(uuid()) @db.Uuid
+  userId      String      @db.Uuid
+  type        ConsentType
+  granted     Boolean
+  textVersion String      @db.VarChar(64)
+  ipAddress   String?     @db.VarChar(64)
+  createdAt   DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, createdAt])
+}
+
+/// Silme / dışa aktarma talepleri. Hesap silinince userId null olur; kayıt uyum kanıtı olarak kalır.
+model DataRequest {
+  id            String            @id @default(uuid()) @db.Uuid
+  userId        String?           @db.Uuid
+  type          DataRequestType
+  status        DataRequestStatus @default(REQUESTED)
+  requestedAt   DateTime          @default(now())
+  scheduledFor  DateTime?
+  completedAt   DateTime?
+  failureReason String?           @db.VarChar(256)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([type, status, scheduledFor])
+  @@index([userId, type, status])
+}

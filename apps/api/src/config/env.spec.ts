@@ -1,8 +1,13 @@
 import { parseEnv } from './env.js';
 
+const key = (len: number) => Buffer.alloc(len, 1).toString('base64');
+
 const base = {
   DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
   REDIS_URL: 'redis://localhost:6379/0',
+  PHONE_HMAC_KEY: key(32),
+  PHONE_ENCRYPTION_KEY: key(32),
+  JWT_ACCESS_SECRET: key(32),
 };
 
 describe('parseEnv', () => {
@@ -23,7 +28,7 @@ describe('parseEnv', () => {
   });
 
   it('eksik zorunlu değişkeni adıyla bildirir', () => {
-    expect(() => parseEnv({ REDIS_URL: base.REDIS_URL })).toThrow(/DATABASE_URL/);
+    expect(() => parseEnv({ ...base, DATABASE_URL: undefined })).toThrow(/DATABASE_URL/);
   });
 
   it('yanlış protokolü reddeder', () => {

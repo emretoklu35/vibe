@@ -1,0 +1,1033 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/auth/otp/request": {
+      "post": {
+        "description": "Numara kayıtlı olsun ya da olmasın aynı yanıt döner (numaranın varlığı sızdırılmaz). Aynı numaraya 60 sn içinde ikinci kod gönderilmez.",
+        "operationId": "AuthController_requestOtp_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestOtpResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "SMS doğrulama kodu gönder",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/otp/verify": {
+      "post": {
+        "operationId": "AuthController_verifyOtp_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Kodu doğrula; giriş yap veya hesap oluştur",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "description": "Her çağrıda yeni refresh token döner; eskisi geçersizleşir. Eski token tekrar kullanılırsa oturum iptal edilir (REFRESH_TOKEN_REUSED).",
+        "operationId": "AuthController_refresh_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Token yenile (rotasyon)",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout_v1",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bu oturumu kapat",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/sessions": {
+      "get": {
+        "operationId": "AuthController_listSessions_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Açık oturumlar",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/sessions/{id}": {
+      "delete": {
+        "operationId": "AuthController_revokeSession_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bir oturumu uzaktan kapat",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/users/me": {
+      "get": {
+        "operationId": "UsersController_me_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Hesap bilgisi ve onboarding adımı",
+        "tags": ["users"]
+      },
+      "patch": {
+        "operationId": "UsersController_update_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Hesap bilgisini güncelle (şimdilik yalnızca doğum tarihi, bir kez)",
+        "tags": ["users"]
+      },
+      "delete": {
+        "operationId": "UsersController_requestDeletion_v1",
+        "parameters": [],
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Hesap silme talebi (30 gün içinde geri alınabilir; tüm oturumlar kapanır)",
+        "tags": ["users"]
+      }
+    },
+    "/api/v1/users/me/restore": {
+      "post": {
+        "operationId": "UsersController_restore_v1",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Silme talebini geri al",
+        "tags": ["users"]
+      }
+    },
+    "/api/v1/app/config": {
+      "get": {
+        "operationId": "LegalController_appConfig_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Uygulama açılış ayarları: minimum sürüm, hukuki metin sürümleri",
+        "tags": ["app"]
+      }
+    },
+    "/api/v1/legal/documents/{type}": {
+      "get": {
+        "operationId": "LegalController_document_v1",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Hukuki metnin güncel sürümü",
+        "tags": ["app"]
+      }
+    },
+    "/api/v1/privacy/consents": {
+      "get": {
+        "operationId": "PrivacyController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentStatesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rıza durumları (belge başına en son karar)",
+        "tags": ["privacy"]
+      },
+      "post": {
+        "operationId": "PrivacyController_record_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordConsentsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentStatesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rıza ver / geri al (birden fazla karar tek işlemde)",
+        "tags": ["privacy"]
+      }
+    },
+    "/api/v1/health/live": {
+      "get": {
+        "operationId": "HealthController_live_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Süreç ayakta mı (bağımlılıklar kontrol edilmez)",
+        "tags": ["health"]
+      }
+    },
+    "/api/v1/health/ready": {
+      "get": {
+        "operationId": "HealthController_ready_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadyResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "İstek kabul etmeye hazır mı (PostgreSQL + Redis)",
+        "tags": ["health"]
+      }
+    }
+  },
+  "info": {
+    "title": "VIBE API",
+    "description": "VIBE mobil uygulaması için REST API",
+    "version": "1",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "RequestOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "+905321234567",
+            "description": "Türkiye cep telefonu (çeşitli yazımlar kabul edilir)"
+          }
+        },
+        "required": ["phone"]
+      },
+      "RequestOtpResponseDataDto": {
+        "type": "object",
+        "properties": {
+          "expiresInSeconds": {
+            "type": "number",
+            "example": 300
+          }
+        },
+        "required": ["expiresInSeconds"]
+      },
+      "RequestOtpResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RequestOtpResponseDataDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "VerifyOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "+905321234567"
+          },
+          "code": {
+            "type": "string",
+            "example": "123456"
+          },
+          "deviceId": {
+            "type": "string",
+            "description": "Cihazda üretilen kalıcı kimlik (oturum listesinde gösterilir)"
+          }
+        },
+        "required": ["phone", "code"]
+      },
+      "TokenPairDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "accessTokenExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "refreshTokenExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["accessToken", "accessTokenExpiresAt", "refreshToken", "refreshTokenExpiresAt"]
+      },
+      "AccountStatus": {
+        "type": "string",
+        "enum": ["ACTIVE", "SUSPENDED", "BANNED", "DELETION_PENDING"]
+      },
+      "OnboardingStep": {
+        "type": "string",
+        "enum": ["BIRTH_DATE", "CONSENTS", "COMPLETE"]
+      },
+      "SignInUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isNew": {
+            "type": "boolean",
+            "description": "Bu girişte yeni hesap oluşturuldu mu"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountStatus"
+              }
+            ]
+          },
+          "onboardingStep": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OnboardingStep"
+              }
+            ]
+          }
+        },
+        "required": ["id", "isNew", "status", "onboardingStep"]
+      },
+      "SignInDataDto": {
+        "type": "object",
+        "properties": {
+          "tokens": {
+            "$ref": "#/components/schemas/TokenPairDto"
+          },
+          "user": {
+            "$ref": "#/components/schemas/SignInUserDto"
+          }
+        },
+        "required": ["tokens", "user"]
+      },
+      "SignInResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SignInDataDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "RefreshDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": ["refreshToken"]
+      },
+      "TokenPairResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TokenPairDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "SessionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "userAgent": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "current": {
+            "type": "boolean",
+            "description": "İsteği yapan oturum mu"
+          }
+        },
+        "required": ["id", "deviceId", "userAgent", "createdAt", "lastUsedAt", "current"]
+      },
+      "SessionsResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionDto"
+            }
+          }
+        },
+        "required": ["data"]
+      },
+      "DeletionInfoDto": {
+        "type": "object",
+        "properties": {
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "scheduledFor": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Bu tarihte hesap kalıcı olarak silinir"
+          }
+        },
+        "required": ["requestedAt", "scheduledFor"]
+      },
+      "MeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountStatus"
+              }
+            ]
+          },
+          "birthDate": {
+            "type": "string",
+            "nullable": true,
+            "example": "1995-04-23"
+          },
+          "age": {
+            "type": "number",
+            "nullable": true
+          },
+          "onboardingStep": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OnboardingStep"
+              }
+            ]
+          },
+          "deletion": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DeletionInfoDto"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "status", "birthDate", "age", "onboardingStep", "deletion", "createdAt"]
+      },
+      "MeResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MeDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "UpdateMeDto": {
+        "type": "object",
+        "properties": {
+          "birthDate": {
+            "type": "string",
+            "example": "1995-04-23",
+            "description": "YYYY-MM-DD. Yalnızca bir kez girilebilir."
+          }
+        }
+      },
+      "DeletionResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DeletionInfoDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "ConsentType": {
+        "type": "string",
+        "enum": [
+          "PRIVACY_NOTICE_ACK",
+          "TERMS_OF_SERVICE",
+          "SPECIAL_CATEGORY_ORIENTATION",
+          "CROSS_BORDER_TRANSFER",
+          "PRECISE_LOCATION",
+          "MARKETING_NOTIFICATIONS"
+        ]
+      },
+      "LegalDocumentSummaryDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConsentType"
+              }
+            ]
+          },
+          "version": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["acknowledgement", "consent"]
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["type", "version", "required", "kind", "title"]
+      },
+      "AppConfigDto": {
+        "type": "object",
+        "properties": {
+          "minimumAppVersion": {
+            "type": "string",
+            "example": "0.1.0",
+            "description": "Bu sürümün altındaki uygulamalar güncellenmeli"
+          },
+          "legalDocuments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LegalDocumentSummaryDto"
+            }
+          }
+        },
+        "required": ["minimumAppVersion", "legalDocuments"]
+      },
+      "AppConfigResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AppConfigDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "LegalDocumentDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConsentType"
+              }
+            ]
+          },
+          "version": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["acknowledgement", "consent"]
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string",
+            "description": "Markdown"
+          }
+        },
+        "required": ["type", "version", "required", "kind", "title", "body"]
+      },
+      "LegalDocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LegalDocumentDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "ErrorBodyDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "VALIDATION_FAILED",
+              "BAD_REQUEST",
+              "UNAUTHENTICATED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "CONFLICT",
+              "PAYLOAD_TOO_LARGE",
+              "RATE_LIMITED",
+              "SERVICE_UNAVAILABLE",
+              "INTERNAL_ERROR",
+              "INVALID_PHONE",
+              "OTP_INVALID",
+              "OTP_EXPIRED",
+              "OTP_TOO_MANY_ATTEMPTS",
+              "TOKEN_EXPIRED",
+              "TOKEN_INVALID",
+              "REFRESH_TOKEN_INVALID",
+              "REFRESH_TOKEN_REUSED",
+              "SESSION_REVOKED",
+              "ACCOUNT_SUSPENDED",
+              "ACCOUNT_BANNED",
+              "ACCOUNT_DELETION_PENDING",
+              "ACCOUNT_NOT_PENDING_DELETION",
+              "UNDERAGE",
+              "REGISTRATION_BLOCKED",
+              "BIRTH_DATE_ALREADY_SET",
+              "INVALID_BIRTH_DATE",
+              "CONSENT_VERSION_MISMATCH",
+              "CONSENT_REQUIRED_CANNOT_WITHDRAW",
+              "CONSENT_TYPE_UNAVAILABLE"
+            ],
+            "example": "VALIDATION_FAILED"
+          },
+          "message": {
+            "type": "string",
+            "example": "İstek doğrulanamadı"
+          },
+          "details": {
+            "type": "object",
+            "description": "Hataya özgü ayrıntılar (ör. alan hataları)"
+          }
+        },
+        "required": ["code", "message"]
+      },
+      "ErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBodyDto"
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Destek ve log eşleştirmesi için istek kimliği"
+          }
+        },
+        "required": ["error", "requestId"]
+      },
+      "ConsentStateDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConsentType"
+              }
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "currentVersion": {
+            "type": "string"
+          },
+          "granted": {
+            "type": "boolean"
+          },
+          "grantedVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "upToDate": {
+            "type": "boolean",
+            "description": "Güncel metin sürümü onaylanmış mı"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "type",
+          "required",
+          "currentVersion",
+          "granted",
+          "grantedVersion",
+          "upToDate",
+          "updatedAt"
+        ]
+      },
+      "ConsentStatesResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsentStateDto"
+            }
+          }
+        },
+        "required": ["data"]
+      },
+      "ConsentDecisionDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConsentType"
+              }
+            ]
+          },
+          "granted": {
+            "type": "boolean"
+          },
+          "textVersion": {
+            "type": "string",
+            "description": "Kullanıcıya gösterilen metnin sürümü (GET /app/config)"
+          }
+        },
+        "required": ["type", "granted", "textVersion"]
+      },
+      "RecordConsentsDto": {
+        "type": "object",
+        "properties": {
+          "decisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsentDecisionDto"
+            }
+          }
+        },
+        "required": ["decisions"]
+      },
+      "LiveDataDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          }
+        },
+        "required": ["status"]
+      },
+      "LiveResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LiveDataDto"
+          }
+        },
+        "required": ["data"]
+      },
+      "ReadinessChecksDto": {
+        "type": "object",
+        "properties": {
+          "database": {
+            "type": "string",
+            "enum": ["up", "down"]
+          },
+          "redis": {
+            "type": "string",
+            "enum": ["up", "down"]
+          }
+        },
+        "required": ["database", "redis"]
+      },
+      "ReadyDataDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          },
+          "checks": {
+            "$ref": "#/components/schemas/ReadinessChecksDto"
+          }
+        },
+        "required": ["status", "checks"]
+      },
+      "ReadyResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReadyDataDto"
+          }
+        },
+        "required": ["data"]
+      }
+    }
+  }
+}

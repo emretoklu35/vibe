@@ -6,6 +6,8 @@ Taban: `/api/v1` · Biçim: JSON · Belge: Swagger UI `/api/docs` (production'da
 
 **Kimlik:** `Authorization: Bearer <accessToken>`. 🔓 = kimlik gerekmez, 🛡 = admin token.
 
+> Faz 2 itibarıyla uygulanmış uçların kesin şeması: `packages/api-contract/openapi.json` (koddan üretilir). Bu belge tasarım özetidir.
+
 **Başarılı yanıt**
 
 ```json
@@ -47,15 +49,15 @@ Brief'teki `/auth/register` ve `/auth/login`, K2 kararıyla bu iki OTP ucuna dö
 
 ## Users & Privacy
 
-| Yöntem | Yol                   | Açıklama                                                                   |
-| ------ | --------------------- | -------------------------------------------------------------------------- |
-| GET    | `/users/me`           | Hesap + onboarding durumu + rıza özeti                                     |
-| PATCH  | `/users/me`           | `{ birthDate }` (yalnızca onboarding'de bir kez; sonrası destek üzerinden) |
-| DELETE | `/users/me`           | Silme talebi (30 gün bekleme). `POST /users/me/restore` ile geri alınır.   |
-| GET    | `/privacy/consents`   | Güncel rıza durumları + metin sürümleri                                    |
-| POST   | `/privacy/consents`   | `{ type, granted, textVersion }` — geri almada ilgili veri silinir         |
-| POST   | `/privacy/export`     | Veri dışa aktarma talebi (asenkron)                                        |
-| GET    | `/privacy/export/:id` | Durum + hazırsa süreli indirme bağlantısı                                  |
+| Yöntem | Yol                   | Açıklama                                                                                                       |
+| ------ | --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| GET    | `/users/me`           | Hesap + onboarding durumu + rıza özeti                                                                         |
+| PATCH  | `/users/me`           | `{ birthDate }` (yalnızca onboarding'de bir kez; sonrası destek üzerinden)                                     |
+| DELETE | `/users/me`           | Silme talebi (30 gün bekleme). `POST /users/me/restore` ile geri alınır.                                       |
+| GET    | `/privacy/consents`   | Güncel rıza durumları + metin sürümleri                                                                        |
+| POST   | `/privacy/consents`   | `{ decisions: [{ type, granted, textVersion }] }` — tek işlemde; zorunlu metin geri alınamaz, eski sürüm → 409 |
+| POST   | `/privacy/export`     | Veri dışa aktarma talebi (asenkron)                                                                            |
+| GET    | `/privacy/export/:id` | Durum + hazırsa süreli indirme bağlantısı                                                                      |
 
 ## Profiles
 
@@ -125,20 +127,21 @@ Mesaj gönderme REST üzerinden (tek doğrulama yolu); socket yalnızca dağıt�
 
 ## Notifications
 
-| Yöntem  | Yol                          | Açıklama                                                                                  |
-| ------- | ---------------------------- | ----------------------------------------------------------------------------------------- |
-| POST    | `/devices`                   | `{ platform, pushToken, appVersion, locale }` (upsert; token başka hesaptaysa devredilir) |
-| DELETE  | `/devices/:id`               | Çıkışta                                                                                   |
-| GET     | `/notifications`             | Uygulama içi bildirimler                                                                  |
-| POST    | `/notifications/read`        | `{ ids }`                                                                                 |
-| GET/PUT | `/notifications/preferences` | Push türleri, pazarlama rızası                                                            |
+| Yöntem         | Yol                          | Açıklama                                                                                  |
+| -------------- | ---------------------------- | ----------------------------------------------------------------------------------------- |
+| POST (Faz 5)   | `/devices`                   | `{ platform, pushToken, appVersion, locale }` (upsert; token başka hesaptaysa devredilir) |
+| DELETE (Faz 5) | `/devices/:id`               | Çıkışta                                                                                   |
+| GET            | `/notifications`             | Uygulama içi bildirimler                                                                  |
+| POST           | `/notifications/read`        | `{ ids }`                                                                                 |
+| GET/PUT        | `/notifications/preferences` | Push türleri, pazarlama rızası                                                            |
 
 ## App
 
-| Yöntem | Yol                             | Açıklama                                                           |
-| ------ | ------------------------------- | ------------------------------------------------------------------ |
-| GET 🔓 | `/app/config`                   | Minimum uygulama sürümü, özellik bayrakları, yasal metin sürümleri |
-| GET 🔓 | `/health/live`, `/health/ready` | Sağlık                                                             |
+| Yöntem | Yol                             | Açıklama                                                   |
+| ------ | ------------------------------- | ---------------------------------------------------------- |
+| GET 🔓 | `/app/config`                   | Minimum uygulama sürümü, hukuki metin listesi ve sürümleri |
+| GET 🔓 | `/legal/documents/:type`        | Hukuki metnin güncel sürümü (markdown)                     |
+| GET 🔓 | `/health/live`, `/health/ready` | Sağlık                                                     |
 
 ## Admin (🛡, Faz 6)
 

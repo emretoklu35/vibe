@@ -1,5 +1,18 @@
 import { z } from 'zod';
 
+/** base64 ile kodlanmış, en az `min` bayt uzunluğunda gizli anahtar. */
+const base64Key = (min: number, exact?: number) =>
+  z
+    .string()
+    .regex(/^[A-Za-z0-9+/]+={0,2}$/, 'base64 olmalı')
+    .transform((value) => Buffer.from(value, 'base64'))
+    .refine((buf) => (exact ? buf.length === exact : buf.length >= min), {
+      message: exact ? `tam ${exact} bayt olmalı` : `en az ${min} bayt olmalı`,
+    });
+
+/** .env.example'daki yalnızca-geliştirme anahtarları; production'da kullanılırsa uygulama başlamaz. */
+export const DEV_ONLY_KEY_PREFIX = 'ZGV2LW9ubHk';
+
 const booleanString = z.enum(['true', 'false']).transform((value) => value === 'true');
 
 export const envSchema = z
@@ -17,6 +30,21 @@ export const envSchema = z
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
     /** Varsayılan IP başına dakikalık istek sınırı. */
     RATE_LIMIT_DEFAULT_PER_MINUTE: z.coerce.number().int().min(1).default(120),
+    /** Telefon numarası özeti (HMAC) ve ondan türetilen OTP özeti anahtarı. ≥ 32 bayt. */
+    PHONE_HMAC_KEY: base64Key(32),
+    /** Telefon numarası şifreleme anahtarı (AES-256-GCM). Tam 32 bayt. */
+    PHONE_ENCRYPTION_KEY: base64Key(32, 32),
+    /** Access token (HS256) imza anahtarı. ≥ 32 bayt. */
+    JWT_ACCESS_SECRET: base64Key(32),
+    ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
+    REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
+    /** SMS sağlayıcısı. Şimdilik yalnızca `console` (kodu loga yazar; production'da yasak). */
+    SMS_PROVIDER: z.enum(['console']).default('console'),
+    /** Bu sürümün altındaki mobil uygulamalar güncellemeye zorlanır. */
+    APP_MIN_VERSION: z
+      .string()
+      .regex(/^\d+\.\d+\.\d+$/, 'x.y.z biçiminde olmalı')
+      .default('0.1.0'),
     /**
      * Tarayıcıdan erişime izin verilen kaynaklar (virgülle ayrılmış). Boş = CORS kapalı.
      * Mobil uygulama tarayıcı olmadığından buna ihtiyaç duymaz; yalnızca web önizleme / admin paneli.
@@ -39,6 +67,25 @@ export const envSchema = z
         path: ['SWAGGER_ENABLED'],
         message: 'Swagger UI production ortamında açılamaz',
       });
+    }
+    if (env.NODE_ENV === 'production' && env.SMS_PROVIDER === 'console') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SMS_PROVIDER'],
+        message:
+          "production'da gerçek bir SMS sağlayıcısı gerekir (console yalnızca geliştirme içindir)",
+      });
+    }
+    if (env.NODE_ENV === 'production') {
+      for (const key of ['PHONE_HMAC_KEY', 'PHONE_ENCRYPTION_KEY', 'JWT_ACCESS_SECRET'] as const) {
+        if (env[key].toString('base64').startsWith(DEV_ONLY_KEY_PREFIX)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [key],
+            message: 'geliştirme anahtarı production ortamında kullanılamaz',
+          });
+        }
+      }
     }
     if (env.NODE_ENV === 'production' && env.CORS_ORIGINS.some((o) => o.startsWith('http://'))) {
       ctx.addIssue({

@@ -2,7 +2,7 @@
 
 More than a match. Real chemistry.
 
-Türkiye için premium, yapay zekâ destekli tanışma uygulaması. **Durum: Faz 1 (temel altyapı) tamamlandı.** Yol haritası: [docs/06-YOL-HARITASI.md](docs/06-YOL-HARITASI.md).
+Türkiye için premium, yapay zekâ destekli tanışma uygulaması. **Durum: Faz 2 (telefonla giriş, hesap, rıza) tamamlandı.** Yol haritası: [docs/06-YOL-HARITASI.md](docs/06-YOL-HARITASI.md).
 
 ## Gereksinimler
 
@@ -41,9 +41,15 @@ npm run api:dev
 ```
 
 ```bash
+npm run worker:dev
+```
+
+```bash
 npm run mobile:start
 ```
 
+- Giriş: geliştirmede SMS gönderilmez; doğrulama kodu API'nin terminal logunda `[GELİŞTİRME] ... doğrulama kodu: 123456` olarak görünür.
+- Worker: hesap silme gibi arka plan işlerini çalıştırır (her 15 dakikada süresi dolan silme taleplerini işler).
 - API: http://localhost:3000/api/v1/health/ready · Swagger UI: http://localhost:3000/api/docs
 - Mobil: Expo CLI'da `i` (iOS), `a` (Android) veya `w` (web). Android emülatöründe `apps/mobile/.env` içindeki `EXPO_PUBLIC_API_URL`'i `http://10.0.2.2:3000` yapın.
 - PostgreSQL `localhost:55432`, Redis `localhost:56379` (diğer projelerle çakışmasın diye standart dışı portlar).
@@ -65,6 +71,7 @@ npm run mobile:start
 apps/api       NestJS 12 modüler monolit (Prisma 7, PostgreSQL + PostGIS, Redis)
 apps/mobile    Expo SDK 58 + Expo Router (iOS / Android)
 packages/config Paylaşılan TypeScript ve Prettier ayarları
+packages/api-contract API'den üretilen OpenAPI + TS tipleri (elle düzenlenmez)
 infra          Yerel geliştirme için docker compose
 docs           Brief, mimari, veri modeli, API, yol haritası, riskler
 ```

@@ -22,13 +22,18 @@
     "test": "npm run test --workspaces --if-present",
     "test:e2e": "npm run test:e2e --workspaces --if-present",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "contract:generate": "npm run openapi:export --workspace @vibe/api && npm run generate --workspace @vibe/api-contract && prettier --write packages/api-contract",
+    "worker:dev": "npm run worker:dev --workspace @vibe/api"
   },
   "prettier": "@vibe/config/prettier",
   "allowScripts": {
     "prisma@7.10.1": true,
     "@prisma/engines@7.10.1": true,
     "esbuild@0.28.2": true,
-    "@scarf/scarf": false
+    "@scarf/scarf": false,
+    "msgpackr-extract": false,
+    "fsevents": false,
+    "@parcel/watcher": false
   }
 }
